@@ -1,6 +1,8 @@
 #Themes and Libraries####
 # Package names
-packages <- c("BiocManager", "Biostrings", "tidyverse", "Rsamtools", "ggseqlogo", "ggpubr" )
+#this code uses the stringr, ggplot2, purrr and dplyr packages 
+#from the tidyverse so it might be easier to install the whole tidyverse if wanted
+packages <- c("BiocManager", "stringr" , "dplyr", "ggplot2", "purrr", "Biostrings",  "Rsamtools", "ggseqlogo", "ggpubr" )
 
 # Install packages not yet installed
 installed_packages <- packages %in% rownames(installed.packages())
@@ -8,9 +10,8 @@ if (any(installed_packages == FALSE)) {
   install.packages(packages[!installed_packages])
 }
 # Packages loading
-if (!require("BiocManager", quietly = TRUE)){
-  invisible(lapply(packages, library, character.only = TRUE))
-}
+invisible(lapply(packages, library, character.only = TRUE))
+
 
 #set working directory and get the files####
 #make a project folder with three subfolders for 1- the BAM files (BAM), 2- the referance sequences (refSeq)
@@ -45,8 +46,10 @@ for (i in 1:length(files)){
   namefile <- names(files[i])
   namefile <- tidyName(namefile)
   data <- filesIn(files[i])
-  MaxCount <- maxCount(data, as.data.frame(sum(data$strand == "+"), row.names = namefile),
-                     as.data.frame(sum(data$strand == "-"), row.names = namefile))
+  MaxC <- maxCount(
+    as.data.frame(sum(data$strand == "-"), row.names = namefile),
+    as.data.frame(sum(data$strand == "+"), row.names = namefile))
+  ifelse(exists("MaxCount"), MaxCount <- rbind(MaxCount, MaxC), MaxCount <- MaxC)
   readLength <- getGenLength(data)
   if (exists("BAMList")){ 
       BAMList[[namefile]] <- data
@@ -83,7 +86,8 @@ for(i in 1:length(SizeDistribution)){
     xlab ("Size")+
     ylab ("Count")+
     ylim((0-max(MaxCount)),(0+max(MaxCount)))+
-    ggtitle(paste0(nam))
+    ggtitle(paste0(nam))+
+    piMaker_theme
   plot(gg)
 rm(nam,dat)
 }
@@ -126,13 +130,14 @@ gg <- ggplot(data = data)+
   xlab ("Size")+
   ylab ("Count")+
   ylim (-(max(MaxCount)*1.1),(max(MaxCount)*1.1))+
-  theme(legend.position = "none")+
-  ggtitle(paste0(namefile))
+  ggtitle(paste0(namefile))+
+  piMaker_theme+
+  theme(legend.position = "none")
 plot(gg)
 }
 }
 #split the data in the 21nt siRNAs 
-if(exists("siRNA_Coverage_Plot")){rm(siRNA_Coverage_Plot, CovCount)}
+if(exists("siRNA_Coverage_Plot")){rm(siRNA_Coverage_Plot, covCount)}
 for (i in 1:length(BAMList)){
   filename <- names(BAMList[i])
   data <- (BAMList[[i]])
@@ -145,7 +150,8 @@ for (i in 1:length(BAMList)){
     dat <- d21[[n]]
     datc <- coverMatrix(dat, Length = 21)
     cov <- getCoverage(datc, Count = 1:(paste0(rsq)))
-    CovCount <- maxCount(cov, max(cov$Pos), abs(min(cov$Neg)))
+    covC <- maxCount(abs(min(cov$Neg)), max(cov$Pos))
+    ifelse(exists("covCount"), covCount <- rbind(covCount,covC), covCount <- covC)
     if(exists("siRNA_Coverage_Plot")){
       siRNA_Coverage_Plot[[namb]] <- cov
       rm(cov)
@@ -155,7 +161,7 @@ for (i in 1:length(BAMList)){
       rm(cov)
     }
   }
-  rm(data,d21,dat,namb,datc)
+  rm(data,d21,dat,namb,datc,covC)
 }
 #plot the coverage
 for (i in 1:(length(siRNA_Coverage_Plot))) {
@@ -165,8 +171,9 @@ for (i in 1:(length(siRNA_Coverage_Plot))) {
     geom_line(data = cvr, aes(x= x, y = Pos ), colour = "black", linewidth = 0.5)+
     geom_line(data = cvr, aes(x= x, y = Neg), colour = "red", linewidth = 0.5)+
     ggtitle(paste0(filename))+
-    ylim(-(max(CovCount)*1.1),(max(CovCount)*1.1))+
-    xlab ("nt position")
+    ylim(-(max(covCount)*1.1),(max(covCount)*1.1))+
+    xlab ("nt position")+
+    piMaker_theme
   plot(gg)
   rm(cvr)
 }
@@ -194,7 +201,9 @@ for (i in 1:(length(siRNA_Coverage_Plot_Normalised))) {
     geom_line(aes(x= x, y = Neg_Normalised), colour = "red", linewidth = 0.5)+
     ggtitle(paste0(namefile))+
     ylim(-1,1)+
-    xlab ("nt position")
+    xlab ("nt position")+
+    ylab(NULL)+
+    piMaker_theme
   plot(gg)
 }
 #make summary data
@@ -226,7 +235,7 @@ for (i in 1:length(samples)) {
       rm(Sumry)
     }
   }
-  if(i == length(samples)){rm(data,datRseq,datn)}
+rm(data,datRseq,datn)
 }  
 #plot summary data        
 for(i in 1:length(siRNA_Summary)){
@@ -244,13 +253,14 @@ for(i in 1:length(siRNA_Summary)){
     ylim(-1,1)+
     xlab ("nt position")+
     guides(guide_legend, fill = NULL)+
+    piMaker_theme+
     theme(legend.position = "none")
   plot(gg)
 }        
 
 #piRNAs####
 #load functions and colours
-#function to find overlaps in piRNAs piFlinger and piCatcher are required
+#function to find overlaps in piRNAs 
 #these colours match standard peak viewers
 DNA_col_scheme =  make_col_scheme(chars=c('A', 'T', 'G', 'C'), groups= NULL, 
                                   cols=c('green3', 'red2', 'black', 'blue'), name='DNA_col_scheme')
@@ -259,7 +269,7 @@ Sizes <- c(24:29) #put in the piRNA sizes we are looking for here
 #21nt siRNAs are dealt with separately for overlap and z score calculations
 setwd(paste(OUT))
 #make long frames of the sequences, first filter the data sets by size
-if(exists("piList")){rm(piList)}
+if(exists("piList")){rm(piList)}+
 if(exists("siList")){rm(siList)}
 for (i in 1:length(samples)) {
   namefile = samples[i]
@@ -316,6 +326,9 @@ for (i in 1:(length(piSeqList))) {
     rsq <- makeRsq(rSeq)
     datr <- filter(data, data$rname == rSeq)
     freq <- piFreq(datr)
+    piC <- maxCount(max(freq$Neg), max(freq$Pos)) 
+    ifelse(exists("piCount"), piCount <- rbind(piCount,piC), piCount <- piC)
+    ifelse(exists("piMatC"), piMatC <- rbind(piMatC, piC),  piMatC <- piC)
     if(exists("piMatrix")){
       piMatrix[[nam]] <- freq
     }else{
@@ -323,7 +336,7 @@ for (i in 1:(length(piSeqList))) {
       piMatrix[[nam]] <- freq
     }    
   }
-  if(i == length(samples)){rm(data,datr,freq)}
+  rm(data,datr,freq,piC)
 }
 #plot piRNA position matrix
 for (i in 1: length(piMatrix)){
@@ -337,9 +350,10 @@ gg <- ggplot(data)+
   geom_col(aes(x = pos, y = Pos, colour = "black"))+
   geom_col(aes(x = pos, y = Neg, colour = "red"))+
   ggtitle(paste0(filename))+
-  theme(legend.position = "none")+
-  ylim(-100,100)+
-  xlim(0,rsq)
+  ylim(-max(piMatC)*1.1,max(piMatC)*1.1)+
+  xlim(0,rsq)+
+  piMaker_theme+
+  theme(legend.position = "none")
 plot(gg)
 }
 #now split the lists into respective piRNAs
@@ -373,11 +387,13 @@ for (i in 1:(length(piSeqList))) {
       gp <- ggplot()+
         geom_logo(piPos, method = 'prob', seq_type = "dna", font = "helvetica_bold", col_scheme = DNA_col_scheme)+
         theme_logo()+
-        ggtitle(namP)
+        ggtitle(namP)+
+        piMaker_theme
       gn <- ggplot()+
         geom_logo(piNeg, method = 'prob', seq_type = "dna", font = "helvetica_bold", col_scheme = DNA_col_scheme)+
         theme_logo()+
-        ggtitle(namN)
+        ggtitle(namN)+
+        piMaker_theme
       fig <- ggarrange(gp,gn, nrow = 2)
       plot(fig)
     }

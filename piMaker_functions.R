@@ -297,7 +297,6 @@ piFreq <- function(x){
   sumNeg <- as.data.frame(xtabs(~FivPr, data = datrNeg))
   row.names(sumNeg) <- sumNeg$FivPr
   sumNeg$x <- as.numeric(row.names(sumNeg))
-  piCount <- maxCount(x, max(sumPos$Freq), max(sumNeg$Freq)) 
   sumNeg$Freq <- -sumNeg$Freq
   plot <- as.data.frame(c(-1 : rsq+1))
   row.names(plot) <- plot[,1]
