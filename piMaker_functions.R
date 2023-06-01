@@ -390,7 +390,6 @@ saveImage <- function(x, SVG = T, PNG = T, scale = 1, width = 14, height = 14, u
              dpi = 600, limitsize = TRUE, bg = NULL)
     }
     
-    
   }
 }
 
