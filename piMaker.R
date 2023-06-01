@@ -19,6 +19,9 @@ source("https://raw.githubusercontent.com/AK1RAJ/piMaker/main/piMaker_functions.
 #set working directory and get the files####
 #make a project folder with three subfolders for 1- the BAM files (BAM), 2- the reference sequences (refSeq)
 #3- the output (Output)
+
+savefiles = T
+
 DIR <- "E:/TidyCode"
 BAM <- paste0(DIR,"/BAM")
 REF <- paste0(DIR,"/refSeq")
@@ -134,6 +137,7 @@ gg <- ggplot(data = data)+
   theme(legend.position = "none")+
   ggtitle(paste0(namefile))
 plot(gg)
+saveImage(paste(namefile))
 }
 }
 #split the data in the 21nt siRNAs 
@@ -322,6 +326,8 @@ for (i in 1:(length(piSeqList))) {
     rsq <- makeRsq(rSeq)
     datr <- filter(data, data$rname == rSeq)
     freq <- piFreq(datr)
+    piC <- maxCount(freq$Neg, freq$Pos)
+    ifelse(exists("piCount"), piCount <- rbind(piCount, piC), piCount <- piC)
     if(exists("piMatrix")){
       piMatrix[[nam]] <- freq
     }else{
@@ -329,7 +335,7 @@ for (i in 1:(length(piSeqList))) {
       piMatrix[[nam]] <- freq
     }    
   }
-  if(i == length(samples)){rm(data,datr,freq)}
+rm(data,datr,freq, piC)
 }
 #plot piRNA position matrix
 for (i in 1: length(piMatrix)){
