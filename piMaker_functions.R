@@ -52,22 +52,6 @@ coverMatrix <- function(x, Length){
   return(dat)
 }
 
-#read in files if multiple
-filesInMultiple <- function(files = parent.frame()$files, tidyname = TRUE, what = parent.frame()$what){
-  #reads in the files according to the parameters 'what'
-  filename <- names(files[i])
-  ifelse(tidyname, namefile <- tidyName(filename), namefile <- filename)
-  data <- as.data.frame(scanBam(paste(filename)), param = Param)
-  return( namefile <- data )
-}      
-#read in files if single
-filesInSingle <- function(files = parent.frame()$files, tidyname = TRUE, what = parent.frame()$what){
-
-  data <- as.data.frame(scanBam(paste(filename)), param = Param)
-  return( namefile <- data )
-}
-
-
 #read in files
 filesIn <- function(file,  what = c("qname", "rname", "strand", "pos", "qwidth", "seq")){
   
