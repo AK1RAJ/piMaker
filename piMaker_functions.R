@@ -146,9 +146,9 @@ makeRsq <- function(x){
 maxCount <- function(Min, Max){
   cPos <- Max
   cNeg <- Min
-  c <- cbind(cPos,cNeg)
+  c <- cbind(max(cPos),max(abs(cNeg)))
   colnames(c) <- c("Pos", "Neg")
-  ifelse( exists("Count"), return( Count <- rbind(Count,c) ), return(MaxCount <- c) )
+ return(c)
 }
 
 #Mean and SD calculations
