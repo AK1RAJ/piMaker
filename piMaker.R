@@ -47,8 +47,9 @@ for (i in 1:length(files)){
   namefile <- names(files[i])
   namefile <- tidyName(namefile)
   data <- filesIn(files[i])
-  MaxCount <- maxCount(data, as.data.frame(sum(data$strand == "+"), row.names = namefile),
+  maxC <- maxCount(as.data.frame(sum(data$strand == "+"), row.names = namefile),
                      as.data.frame(sum(data$strand == "-"), row.names = namefile))
+  MaxCount <- ifelse(exists("MaxCount"), MaxCount <- rbind(MaxCount, maxC), MaxCount <- maxC)
   readLength <- getGenLength(data)
   if (exists("BAMList")){ 
       BAMList[[namefile]] <- data
@@ -147,7 +148,8 @@ for (i in 1:length(BAMList)){
     dat <- d21[[n]]
     datc <- coverMatrix(dat, Length = 21)
     cov <- getCoverage(datc, Count = 1:(paste0(rsq)))
-    CovCount <- maxCount(cov, max(cov$Pos), abs(min(cov$Neg)))
+    CovC <- maxCount( cov$Pos, cov$Neg)
+    CovCount <- ifelse(exists("CovCount"), CovCount <- rbind(CovCount, CovC), CovCount <- CovC)
     if(exists("siRNA_Coverage_Plot")){
       siRNA_Coverage_Plot[[namb]] <- cov
       rm(cov)
