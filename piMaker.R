@@ -15,7 +15,7 @@ if (!require("BiocManager", quietly = TRUE)){
 source("https://raw.githubusercontent.com/AK1RAJ/piMaker/main/piMaker_functions.R")
 
 #set working directory and get the files####
-#make a project folder with three subfolders for 1- the BAM files (BAM), 2- the referance sequences (refSeq)
+#make a project folder with three subfolders for 1- the BAM files (BAM), 2- the reference sequences (refSeq)
 #3- the output (Output)
 DIR <- "F:/TidyCode"
 BAM <- paste0(DIR,"/BAM")
