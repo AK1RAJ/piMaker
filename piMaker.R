@@ -12,11 +12,19 @@ if (any(installed_packages == FALSE)) {
 # Packages loading
 invisible(lapply(packages, library, character.only = TRUE))
 
+#load the functions from here
+source("https://raw.githubusercontent.com/AK1RAJ/piMaker/main/piMaker_functions.R")
+
+#test Bam files are at https://github.com/AK1RAJ/piMaker/tree/main/BAM
+#test reference sequences are at: https://github.com/AK1RAJ/piMaker/tree/main/refSeq
 
 #set working directory and get the files####
-#make a project folder with three subfolders for 1- the BAM files (BAM), 2- the referance sequences (refSeq)
+#make a project folder with three subfolders for 1- the BAM files (BAM), 2- the reference sequences (refSeq)
 #3- the output (Output)
-DIR <- "F:/TidyCode"
+
+savefiles = T #T/F option on whether to save the output plots or not
+
+DIR <- "E:/TidyCode"
 BAM <- paste0(DIR,"/BAM")
 REF <- paste0(DIR,"/refSeq")
 OUT <- paste0(DIR,"/Output")
@@ -40,16 +48,19 @@ files <- BamFileList((c(list.files(full.names = FALSE, #list of the BAM files
                                    include.dirs = TRUE, no.. = FALSE ))))
 #assign the samples here
 samples <- c("MOCK", "rTOSV")
-#read in the files
+#read in the files 
 if(exists("BAMList")){rm(BAMList)}
 for (i in 1:length(files)){
   namefile <- names(files[i])
-  namefile <- tidyName(namefile)
+  namefile <- tidyName(namefile)#tidies the name if needed
   data <- filesIn(files[i])
   MaxC <- maxCount(
     as.data.frame(sum(data$strand == "-"), row.names = namefile),
     as.data.frame(sum(data$strand == "+"), row.names = namefile))
   ifelse(exists("MaxCount"), MaxCount <- rbind(MaxCount, MaxC), MaxCount <- MaxC)
+  maxC <- maxCount(as.data.frame(sum(data$strand == "+"), row.names = namefile),
+                     as.data.frame(sum(data$strand == "-"), row.names = namefile))
+  MaxCount <- ifelse(exists("MaxCount"), MaxCount <- rbind(MaxCount, maxC), MaxCount <- maxC)
   readLength <- getGenLength(data)
   if (exists("BAMList")){ 
       BAMList[[namefile]] <- data
@@ -134,6 +145,7 @@ gg <- ggplot(data = data)+
   piMaker_theme+
   theme(legend.position = "none")
 plot(gg)
+saveImage(paste(namefile))
 }
 }
 #split the data in the 21nt siRNAs 
@@ -150,8 +162,8 @@ for (i in 1:length(BAMList)){
     dat <- d21[[n]]
     datc <- coverMatrix(dat, Length = 21)
     cov <- getCoverage(datc, Count = 1:(paste0(rsq)))
-    covC <- maxCount(abs(min(cov$Neg)), max(cov$Pos))
-    ifelse(exists("covCount"), covCount <- rbind(covCount,covC), covCount <- covC)
+    CovC <- maxCount( cov$Pos, cov$Neg)
+    CovCount <- ifelse(exists("CovCount"), CovCount <- rbind(CovCount, CovC), CovCount <- CovC)
     if(exists("siRNA_Coverage_Plot")){
       siRNA_Coverage_Plot[[namb]] <- cov
       rm(cov)
@@ -326,9 +338,8 @@ for (i in 1:(length(piSeqList))) {
     rsq <- makeRsq(rSeq)
     datr <- filter(data, data$rname == rSeq)
     freq <- piFreq(datr)
-    piC <- maxCount(max(freq$Neg), max(freq$Pos)) 
-    ifelse(exists("piCount"), piCount <- rbind(piCount,piC), piCount <- piC)
-    ifelse(exists("piMatC"), piMatC <- rbind(piMatC, piC),  piMatC <- piC)
+    piC <- maxCount(freq$Neg, freq$Pos)
+    ifelse(exists("piCount"), piCount <- rbind(piCount, piC), piCount <- piC)
     if(exists("piMatrix")){
       piMatrix[[nam]] <- freq
     }else{
@@ -350,7 +361,7 @@ gg <- ggplot(data)+
   geom_col(aes(x = pos, y = Pos, colour = "black"))+
   geom_col(aes(x = pos, y = Neg, colour = "red"))+
   ggtitle(paste0(filename))+
-  ylim(-max(piMatC)*1.1,max(piMatC)*1.1)+
+  ylim(-max(piCOunt)*1.1,max(piCount)*1.1)+
   xlim(0,rsq)+
   piMaker_theme+
   theme(legend.position = "none")

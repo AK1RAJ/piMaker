@@ -146,9 +146,9 @@ makeRsq <- function(x){
 maxCount <- function(Min, Max){
   cPos <- Max
   cNeg <- Min
-  c <- cbind(cPos,cNeg)
+  c <- cbind(max(cPos),max(abs(cNeg)))
   colnames(c) <- c("Pos", "Neg")
-  ifelse( exists("Count"), return( Count <- rbind(Count,c) ), return(MaxCount <- c) )
+ return(c)
 }
 
 #Mean and SD calculations
@@ -365,5 +365,32 @@ Z_Score <- function(x){
                mean(dat[,2]))/
               sd(dat[,2]))
   return(dat)
+}
+
+#compact code to save images from plots
+saveImage <- function(x, SVG = T, PNG = T, scale = 1, width = 14, height = 14, units = "cm"){
+  
+  scale. = scale
+  width. = width
+  height. = height
+  units. = units
+  
+  if (savefiles == T){
+    
+    filename = x
+    directory = OUT
+    
+    if(SVG == T){
+      ggsave(paste0(directory, "/",filename, ".svg"), plot = last_plot(), device = svg, scale = scale., width = width., height = height., units = units., 
+             dpi = 600, limitsize = TRUE, bg = NULL)
+    }
+    
+    if(PNG == T){
+      ggsave(paste0(directory, "/",filename, ".png"), plot = last_plot(), device = png, scale = scale., width = width., height = height., units = units., 
+             dpi = 600, limitsize = TRUE, bg = NULL)
+    }
+    
+    
+  }
 }
 
