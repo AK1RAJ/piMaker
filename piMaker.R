@@ -18,15 +18,15 @@ source("https://raw.githubusercontent.com/AK1RAJ/piMaker/main/piMaker_functions.
 #test Bam files are at https://github.com/AK1RAJ/piMaker/tree/main/BAM
 #test reference sequences are at: https://github.com/AK1RAJ/piMaker/tree/main/refSeq
 
-savefiles = T #T/F option on whether to save the output plots or not
+savefiles = F #T/F option on whether to save the output plots or not
 
 #set working directory and get the files####
 #make a project folder with three subfolders for 1- the BAM files (BAM), 2- the reference sequences (refSeq)
 #3- the output (Output)
-DIR <- "E:/TidyCode"
+DIR <- "F:/TidyCode"
 BAM <- paste0(DIR,"/BAM")
 REF <- paste0(DIR,"/refSeq")
-OUT <- paste0(DIR,"/Output")
+OUT <- paste0(DIR,"/Test")
 setwd(paste(REF))
 #get the genome length, if this is not done, the length will be calculated from 
 #the BAM file, but may miss uncovered regions
@@ -48,14 +48,14 @@ files <- BamFileList((c(list.files(full.names = FALSE, #list of the BAM files
 #assign the samples here
 samples <- c("MOCK", "rTOSV")
 #read in the files 
-if(exists("BAMList")){rm(BAMList)}
+if(exists("BAMList")){rm(BAMList, MaxCount)}
 for (i in 1:length(files)){
   namefile <- names(files[i])
   namefile <- tidyName(namefile)#tidies the name if needed
   data <- filesIn(files[i])
   maxC <- maxCount(as.data.frame(sum(data$strand == "+"), row.names = namefile),
                      as.data.frame(sum(data$strand == "-"), row.names = namefile))
-  MaxCount <- ifelse(exists("MaxCount"), MaxCount <- rbind(MaxCount, maxC), MaxCount <- maxC)
+  ifelse(exists("MaxCount"), MaxCount <- rbind(MaxCount, maxC), MaxCount <- maxC)
   readLength <- getGenLength(data)
   if (exists("BAMList")){ 
       BAMList[[namefile]] <- data
@@ -145,7 +145,7 @@ saveImage(paste(namefile))
 }
 }
 #split the data in the 21nt siRNAs 
-if(exists("siRNA_Coverage_Plot")){rm(siRNA_Coverage_Plot, covCount)}
+if(exists("siRNA_Coverage_Plot")){rm(siRNA_Coverage_Plot, CovCount)}
 for (i in 1:length(BAMList)){
   filename <- names(BAMList[i])
   data <- (BAMList[[i]])
@@ -157,9 +157,9 @@ for (i in 1:length(BAMList)){
     namb <- paste0(names(BAMList[i]), "_", names(d21[n]))
     dat <- d21[[n]]
     datc <- coverMatrix(dat, Length = 21)
-    cov <- getCoverage(datc, Count = 1:(paste0(rsq)))
-    CovC <- maxCount( cov$Pos, cov$Neg)
-    CovCount <- ifelse(exists("CovCount"), CovCount <- rbind(CovCount, CovC), CovCount <- CovC)
+    cov <- getCoverage(datc, Count = 1:(paste0(rsq))) 
+    covC <- c(maxCount(cov$Neg, cov$Pos))
+    ifelse(exists("siCovCount"), siCovCount <- rbind(siCovCount, covC), siCovCount <- covC)
     if(exists("siRNA_Coverage_Plot")){
       siRNA_Coverage_Plot[[namb]] <- cov
       rm(cov)
@@ -171,7 +171,7 @@ for (i in 1:length(BAMList)){
   }
   rm(data,d21,dat,namb,datc,covC)
 }
-#plot the coverage
+#plot the coverage 
 for (i in 1:(length(siRNA_Coverage_Plot))) {
   filename <- names(siRNA_Coverage_Plot[i])
   cvr <- data.frame(siRNA_Coverage_Plot[[i]])
@@ -179,7 +179,7 @@ for (i in 1:(length(siRNA_Coverage_Plot))) {
     geom_line(data = cvr, aes(x= x, y = Pos ), colour = "black", linewidth = 0.5)+
     geom_line(data = cvr, aes(x= x, y = Neg), colour = "red", linewidth = 0.5)+
     ggtitle(paste0(filename))+
-    ylim(-(max(covCount)*1.1),(max(covCount)*1.1))+
+    ylim(-(max(siCovCount)*1.1),(max(siCovCount)*1.1))+
     xlab ("nt position")+
     piMaker_theme
   plot(gg)
@@ -405,7 +405,7 @@ gg <- ggplot(data)+
   geom_col(aes(x = pos, y = Pos, colour = "black"))+
   geom_col(aes(x = pos, y = Neg, colour = "red"))+
   ggtitle(paste0(filename))+
-  ylim(-max(piCOunt)*1.1,max(piCount)*1.1)+
+  ylim(-max(piCount)*1.1,max(piCount)*1.1)+
   xlim(0,rsq)+
   piMaker_theme+
   theme(legend.position = "none")
@@ -424,10 +424,10 @@ for (i in 1: length(siMatrix)){
     geom_col(aes(x = pos, y = Pos, colour = "black"))+
     geom_col(aes(x = pos, y = Neg, colour = "red"))+
     ggtitle(paste0(filename))+
-    theme(legend.position = "none")+
-    ylim(-max(siMax),max(siMax))+
+    ylim(-max(siCount),max(siCount))+
     xlim(0,rsq)+
-    piMaker_theme
+    piMaker_theme+
+    theme(legend.position = "none")
   plot(gg)
   saveImage(paste0(filename))
 }
@@ -572,7 +572,7 @@ for (i in 1:(length(siSeqList))) {
   rm(datS)
 }
 #join the positive and negative reads into a single matrix for the piRNAs 
-if(exists("piTally_List_Matrix")){rm(piTally_List_Matrix)}
+if(exists("piTally_List_Matrix")){rm(piTally_List_Matrix, piMax)}
 for (i in 1:length(samples)){
   smp <- samples[i]
   namS <- paste0(smp)
@@ -587,6 +587,7 @@ for (i in 1:length(samples)){
     colnames(datN) <- paste0("Neg_", colnames(datN))
     datC <- cbind(datN, datP)
     piTalMax <- maxCount( max(datC[,c(2:7)]), max(datC[,c(9:14)]))
+    ifelse(exists("piMax"), piMax <- rbind(piMax,piTalMax), piMax <- piTalMax)
     if(exists("piTally_List_Matrix")){
       piTally_List_Matrix[[namRS]] <- datC
     } else{
@@ -597,7 +598,7 @@ for (i in 1:length(samples)){
   rm(smp,rSeq,namRP,namRN,namRS,datP,datN,datC)
 }
 #join the positive and negative reads into a single matrix for the siRNAs
-if(exists("siTally_List_Matrix")){rm(siTally_List_Matrix)}
+if(exists("siTally_List_Matrix")){rm(siTally_List_Matrix, siMax)}
 for (i in 1:length(samples)){
   smp <- samples[i]
   namS <- paste0(smp)
@@ -612,6 +613,7 @@ for (i in 1:length(samples)){
     colnames(datN) <- paste0("Neg_", colnames(datN))
     datC <- cbind(datN, datP)
     siTalMax <- maxCount( max(datC[,2]), max(datC[,4]))
+    ifelse(exists("siMax"), siMax <- rbind(siMax, siTalMax), siMax <- siTalMax)
     if(exists("siTally_List_Matrix")){
       siTally_List_Matrix[[namRS]] <- datC
     } else{
@@ -672,7 +674,7 @@ for(i in 1:length(piTally_List_Matrix)){
                                    xmax = Pos_25_xend, colour = "purple", fill = "purple",  alpha = 0.4))+
     geom_rect(data = dat_2429, aes(ymin = 0, ymax = - Neg_29, xmin = Neg_29_x,
                                    xmax = Neg_25_xend, colour = "purple", fill = "purple",  alpha = 0.4))+
-    ylim(-50,50)+
+    ylim(-max(piMax),max(piMax))+
     guides( fill = FALSE, alpha = FALSE)+
     scale_colour_discrete(name = "Size",labels=c('24', '25', "26", "27", "28", "29"))+
     guides(color=guide_legend(override.aes=list(fill=NA)))+
