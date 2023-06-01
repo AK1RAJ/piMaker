@@ -95,7 +95,7 @@ for(i in 1:length(SizeDistribution)){
     ggtitle(paste0(nam))+
     piMaker_theme
   plot(gg)
-  imageSave(paste0(nam))
+  saveImage(paste0(nam))
 rm(nam,dat)
 }
 #make mean size distributions
@@ -790,7 +790,7 @@ for (i in 1:length(samples)){
       
       fig <- ggarrange(gz +rremove("xlab") +rremove("x.text"), go , nrow = 2)
       plot(fig)
-      imageSave(paste0(namd))
+      saveImage(paste0(namd))
     }
   }
 }
@@ -829,7 +829,7 @@ for (i in 1:length(samples)){
       
       fig <- ggarrange(gz +rremove("xlab") +rremove("x.text"), go , nrow = 2)
       plot(fig)
-      imageSave(paste0(namd))
+      saveImage(paste0(namd))
     }
   }
 }
