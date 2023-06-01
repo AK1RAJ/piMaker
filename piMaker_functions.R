@@ -53,7 +53,7 @@ coverMatrix <- function(x, Length){
 }
 
 #read in files if multiple
-filesInMultiple <- function(files = NULL, tidyname = TRUE, what = parent.frame()$what){
+filesInMultiple <- function(files = parent.frame()$files, tidyname = TRUE, what = parent.frame()$what){
   #reads in the files according to the parameters 'what'
   filename <- names(files[i])
   ifelse(tidyname, namefile <- tidyName(filename), namefile <- filename)
@@ -61,21 +61,23 @@ filesInMultiple <- function(files = NULL, tidyname = TRUE, what = parent.frame()
   return( namefile <- data )
 }      
 #read in files if single
-filesInSingle <- function(files = NULL, tidyname = TRUE, what = parent.frame()$what){
-  
-  filename <- names(files)
-  ifelse(tidyname, namefile <- tidyName(filename), namefile <- filename)
+filesInSingle <- function(files = parent.frame()$files, tidyname = TRUE, what = parent.frame()$what){
+
   data <- as.data.frame(scanBam(paste(filename)), param = Param)
   return( namefile <- data )
 }
+
+
 #read in files
-filesIn <- function(files = NULL, tidyname = TRUE, what = c("qname", "rname", "strand", "pos", "qwidth", "seq")){
-  if(length(files)>1){
-    files <- filesInMultiple(files)
-  }
-  if(length(files)==1){
-    files <- filesInSingle(files)
-  }
+filesIn <- function(file,  what = c("qname", "rname", "strand", "pos", "qwidth", "seq")){
+  
+  filename <- names(file)
+  
+  param <- ScanBamParam(what = what)
+  
+  file <- as.data.frame(scanBam(paste(filename)), param = param)
+ 
+  return(filename <- file)
 }
 
 #calculates the coverage of each nucleotide in the genome
