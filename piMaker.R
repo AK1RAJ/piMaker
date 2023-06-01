@@ -8,16 +8,18 @@ if (any(installed_packages == FALSE)) {
   install.packages(packages[!installed_packages])
 }
 # Packages loading
-if (!require("BiocManager", quietly = TRUE)){
-  invisible(lapply(packages, library, character.only = TRUE))
-}
+invisible(lapply(packages, library, character.only = TRUE))
 
+#load the functions from here
 source("https://raw.githubusercontent.com/AK1RAJ/piMaker/main/piMaker_functions.R")
+
+#test Bam files are at https://github.com/AK1RAJ/piMaker/tree/main/BAM
+#test reference sequences are at: https://github.com/AK1RAJ/piMaker/tree/main/refSeq
 
 #set working directory and get the files####
 #make a project folder with three subfolders for 1- the BAM files (BAM), 2- the reference sequences (refSeq)
 #3- the output (Output)
-DIR <- "F:/TidyCode"
+DIR <- "E:/TidyCode"
 BAM <- paste0(DIR,"/BAM")
 REF <- paste0(DIR,"/refSeq")
 OUT <- paste0(DIR,"/Output")
@@ -41,11 +43,11 @@ files <- BamFileList((c(list.files(full.names = FALSE, #list of the BAM files
                                    include.dirs = TRUE, no.. = FALSE ))))
 #assign the samples here
 samples <- c("MOCK", "rTOSV")
-#read in the files
+#read in the files 
 if(exists("BAMList")){rm(BAMList)}
 for (i in 1:length(files)){
   namefile <- names(files[i])
-  namefile <- tidyName(namefile)
+  namefile <- tidyName(namefile)#tidies the name if needed
   data <- filesIn(files[i])
   maxC <- maxCount(as.data.frame(sum(data$strand == "+"), row.names = namefile),
                      as.data.frame(sum(data$strand == "-"), row.names = namefile))
