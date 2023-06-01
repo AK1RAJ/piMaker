@@ -18,12 +18,11 @@ source("https://raw.githubusercontent.com/AK1RAJ/piMaker/main/piMaker_functions.
 #test Bam files are at https://github.com/AK1RAJ/piMaker/tree/main/BAM
 #test reference sequences are at: https://github.com/AK1RAJ/piMaker/tree/main/refSeq
 
+savefiles = T #T/F option on whether to save the output plots or not
+
 #set working directory and get the files####
 #make a project folder with three subfolders for 1- the BAM files (BAM), 2- the reference sequences (refSeq)
 #3- the output (Output)
-
-savefiles = T #T/F option on whether to save the output plots or not
-
 DIR <- "E:/TidyCode"
 BAM <- paste0(DIR,"/BAM")
 REF <- paste0(DIR,"/refSeq")
@@ -54,10 +53,6 @@ for (i in 1:length(files)){
   namefile <- names(files[i])
   namefile <- tidyName(namefile)#tidies the name if needed
   data <- filesIn(files[i])
-  MaxC <- maxCount(
-    as.data.frame(sum(data$strand == "-"), row.names = namefile),
-    as.data.frame(sum(data$strand == "+"), row.names = namefile))
-  ifelse(exists("MaxCount"), MaxCount <- rbind(MaxCount, MaxC), MaxCount <- MaxC)
   maxC <- maxCount(as.data.frame(sum(data$strand == "+"), row.names = namefile),
                      as.data.frame(sum(data$strand == "-"), row.names = namefile))
   MaxCount <- ifelse(exists("MaxCount"), MaxCount <- rbind(MaxCount, maxC), MaxCount <- maxC)
@@ -70,7 +65,7 @@ for (i in 1:length(files)){
     }
   rm(data)
 }
-#make size distributions rm(Count)
+#make size distributions 
 if(exists("SizeDistribution")){rm(SizeDistribution)}
 for (i in 1:length(BAMList)){
   filename <- names(BAMList[i])
@@ -96,10 +91,11 @@ for(i in 1:length(SizeDistribution)){
     geom_col(aes( y = Neg))+
     xlab ("Size")+
     ylab ("Count")+
-    ylim((0-max(MaxCount)),(0+max(MaxCount)))+
+    ylim((0-max(MaxCount)*1.1),(0+max(MaxCount)*1.1))+
     ggtitle(paste0(nam))+
     piMaker_theme
   plot(gg)
+  imageSave(paste0(nam))
 rm(nam,dat)
 }
 #make mean size distributions
@@ -187,6 +183,7 @@ for (i in 1:(length(siRNA_Coverage_Plot))) {
     xlab ("nt position")+
     piMaker_theme
   plot(gg)
+  saveImage(paste(filename))
   rm(cvr)
 }
 #normalise the data to take unequal read counts in account
@@ -217,6 +214,7 @@ for (i in 1:(length(siRNA_Coverage_Plot_Normalised))) {
     ylab(NULL)+
     piMaker_theme
   plot(gg)
+  saveImage(paste(namefile))
 }
 #make summary data
 if(exists("siRNA_Summary")){rm(siRNA_Summary)}
@@ -250,6 +248,7 @@ for (i in 1:length(samples)) {
 rm(data,datRseq,datn)
 }  
 #plot summary data        
+if(exists("Summary_Plot")){
 for(i in 1:length(siRNA_Summary)){
   filename <- names(siRNA_Summary[i])
   data <- siRNA_Summary[[i]]
@@ -268,8 +267,9 @@ for(i in 1:length(siRNA_Summary)){
     piMaker_theme+
     theme(legend.position = "none")
   plot(gg)
+  saveImage(paste(filename))
 }        
-
+}
 #piRNAs####
 #load functions and colours
 #function to find overlaps in piRNAs 
@@ -292,23 +292,24 @@ for (i in 1:length(samples)) {
     datl <- datl[,c(3,4:6,12)]
     datp <- filter(datl, between( datl$qwidth,  as.numeric(min(Sizes)),  as.numeric(max(Sizes)) ) )
     dats <- filter(datl,  datl$qwidth == 21)
-    nam <- (paste0(filename, "_piSequences"))
+    namp <- (paste0(filename, "_piSequences"))
+    nams <- (paste0(filename, "_siSequences"))
     if(exists("piList")){
-      piList[[nam]] <- datp
+      piList[[namp]] <- datp
     }else{
       piList <- list()
-      piList[[nam]] <- dats
+      piList[[namp]] <- dats
     }
     if(exists("siList")){
-      siList[[nam]] <- dats
+      siList[[nams]] <- dats
     }else{
       siList <- list()
-      siList[[nam]] <- dats
+      siList[[nams]] <- dats
     }
   }   
-  rm(data, datl, datp, dats)
+  rm(data,datl,datp,dats,namp,nams)
 }
-#now combine into single sets for each sample
+#now combine into single sets for each sample for the piRNAs
 if(exists("piSeqList")){rm(piSeqList)}
 for (i in 1:length(samples)) {
   namefile = samples[i]
@@ -318,15 +319,36 @@ for (i in 1:length(samples)) {
     dat <- data[[l]]
     ifelse(exists("pi_res"), pi_res <- rbind(pi_res,dat), pi_res <- dat)
   }
-    if(exists("piSeqList")){
-      piSeqList[[filename]] <- pi_res
-      rm(pi_res)
-    }else{
-      piSeqList <- list()
-      piSeqList[[filename]] <- pi_res
-      rm(pi_res)
-    }
+  if(exists("piSeqList")){
+    piSeqList[[filename]] <- pi_res
+    rm(pi_res)
+  }else{
+    piSeqList <- list()
+    piSeqList[[filename]] <- pi_res
+    rm(pi_res)
   }
+  rm(dat, data)
+}
+#now combine into single sets for each sample for the siRNAs
+if(exists("siSeqList")){rm(siSeqList)}
+for (i in 1:length(samples)) {
+  namefile = samples[i]
+  filename <- paste0(namefile, "_siRNAs")
+  data <- siList[grepl(namefile, names(siList))]
+  for (l in 1:length(data)){
+    dat <- data[[l]]
+    ifelse(exists("si_res"), si_res <- rbind(si_res,dat), si_res <- dat)
+  }
+  if(exists("siSeqList")){
+    siSeqList[[filename]] <- si_res
+    rm(si_res)
+  }else{
+    siSeqList <- list()
+    siSeqList[[filename]] <- si_res
+    rm(si_res)
+  }
+  rm(dat,data)
+}
 #make piRNA position matrix
 if(exists("piMatrix")){rm(piMatrix)}
 for (i in 1:(length(piSeqList))) { 
@@ -349,7 +371,29 @@ for (i in 1:(length(piSeqList))) {
   }
   rm(data,datr,freq,piC)
 }
-#plot piRNA position matrix
+#make siRNA position matrix
+if(exists("siMatrix")){rm(siMatrix)}
+for (i in 1:(length(siSeqList))) { 
+  namfile <- names(siSeqList[i])
+  data <- siSeqList[[i]]
+  for (r in 1:(length(refSeq))) {
+    rSeq <- refSeq[r]
+    nam <- paste0(namfile, "_", rSeq)
+    rsq <- makeRsq(rSeq)
+    datr <- filter(data, data$rname == rSeq)
+    freq <- piFreq(datr)
+    siC <- maxCount(freq$Neg, freq$Pos)
+    ifelse(exists("siCount"), siCount <- rbind(piCount, siC), siCount <- siC)
+    if(exists("siMatrix")){
+      siMatrix[[nam]] <- freq
+    }else{
+      siMatrix <- list()
+      siMatrix[[nam]] <- freq
+    }    
+  }
+  rm(data,datr,freq)
+}
+#plot piRNA position matrix - we don't really need to do this for the siRNAs as this is covered previously!
 for (i in 1: length(piMatrix)){
   data <- piMatrix[[i]]
   filename <- names(piMatrix[i])
@@ -366,6 +410,26 @@ gg <- ggplot(data)+
   piMaker_theme+
   theme(legend.position = "none")
 plot(gg)
+saveImage(paste0(filename))
+}
+#but the code is here anyway
+for (i in 1: length(siMatrix)){
+  data <- siMatrix[[i]]
+  filename <- names(siMatrix[i])
+  rsq <- str_extract(filename,
+                     '([A-Za-z].)([0-9]+)')
+  rsq <- makeRsq(rsq)
+  gg <- ggplot(data)+
+    geom_hline(yintercept = 0, linetype = "solid", colour = "grey")+
+    geom_col(aes(x = pos, y = Pos, colour = "black"))+
+    geom_col(aes(x = pos, y = Neg, colour = "red"))+
+    ggtitle(paste0(filename))+
+    theme(legend.position = "none")+
+    ylim(-max(siMax),max(siMax))+
+    xlim(0,rsq)+
+    piMaker_theme
+  plot(gg)
+  saveImage(paste0(filename))
 }
 #now split the lists into respective piRNAs
 if(exists("piRNA_List")){rm(piRNA_List)}
@@ -407,13 +471,14 @@ for (i in 1:(length(piSeqList))) {
         piMaker_theme
       fig <- ggarrange(gp,gn, nrow = 2)
       plot(fig)
+      saveImage(paste0(namj))
     }
   }
-  if(i == length(samples)){rm(data, datj, datjNeg, datjPos, datsz, piPos, piNeg)}
+rm(data, datj, datjNeg, datjPos, datsz, piPos, piNeg)
 } 
 #make the position matrix for the reads, counts how many of each read length at each position
 #this can take a while! rm(Count) s=1
-if(exists("Tally_List")){rm(Tally_List)}
+if(exists("piTally_List")){rm(piTally_List)}
 for (i in 1:(length(piSeqList))) {
   namfile <- names(piSeqList[i])
   data <- piSeqList[[i]]
@@ -445,22 +510,69 @@ for (i in 1:(length(piSeqList))) {
           res <- res[, c( ncol(res), (1:(ncol(res)-1))  )]
           ifelse(exists("result"), result <- rbind(result, res), result <- res)
         }
-      if(exists("Tally_List")){
+      if(exists("piTally_List")){
         colnames(result) <- c("pos", c(24:29))
-        Tally_List[[namB]] <- result
+        piTally_List[[namB]] <- result
         rm(result,res)
       }else{
-        Tally_List <- list()
+        piTally_List <- list()
         colnames(result) <- c("pos", c(24:29))
-        Tally_List[[namB]] <- result
+        piTally_List[[namB]] <- result
         rm(result,res)
       }
     }
   }
   rm(datS)
 }
-#join the positive and negative reads into a single matrix
-if(exists("Tally_List_Matrix")){rm(Tally_List_Matrix)}
+#and do the same for the siRNAs -  this is a lot quicker!
+if(exists("siTally_List")){rm(siTally_List)}
+for (i in 1:(length(siSeqList))) {
+  namfile <- names(siSeqList[i])
+  data <- siSeqList[[i]]
+  for (r in 1:(length(refSeq))) {
+    rSeq <- refSeq[r]
+    datr <- dplyr::filter(data, data$rname == rSeq)
+    datr <- split(datr, datr$strand)
+    datr <- datr[-3]
+    GenPosn <- c(1:makeRsq(rSeq))
+    for (s in 1:length(datr)) {
+      spt <- names(datr[s])
+      ifelse(names(datr[s]) == "+", namC <- "Pos", namC <- "Neg")
+      namB <- paste0(namfile,"_", rSeq,"_", namC, "_Tally")
+      datS <- datr[[s]]
+      if(names(datr[s]) == "-"){
+        datS$pos <- datS$pos + datS$qwidth#this makes sure the 5' of the negative strand is in the correct position
+      }
+      for(t in 1:length(GenPosn)){
+        targ <- as.numeric(GenPosn[t])#sets a target for a single nucleotide in the genome 
+        pat <- (dplyr::filter(datS, datS$pos == targ))#returns all reads at that target position
+        if(is.na(pat[1,1])){
+          pat[1,] <-  c(paste0(rSeq), paste0(spt), (paste0(GenPosn[t])),(0L),(0L))
+        }#sets a grid of 0 if there are no reads at the target position
+        pat <- pat[,3:4]#removes excess input
+        res <- countMatrix(pat, Count = c(21))#returns sum of the count of read length at the target
+        res <- data.frame(t(res))
+        row.names(res) <- targ
+        res$pos <- as.numeric(row.names(res))
+        res <- res[, c( ncol(res), (1:(ncol(res)-1))  )]
+        ifelse(exists("result"), result <- rbind(result, res), result <- res)
+      }
+      if(exists("siTally_List")){
+        colnames(result) <- c("pos", c(21))
+        siTally_List[[namB]] <- result
+        rm(result,res)
+      }else{
+        siTally_List <- list()
+        colnames(result) <- c("pos", c(21))
+        siTally_List[[namB]] <- result
+        rm(result,res)
+      }
+    }
+  }
+  rm(datS)
+}
+#join the positive and negative reads into a single matrix for the piRNAs 
+if(exists("piTally_List_Matrix")){rm(piTally_List_Matrix)}
 for (i in 1:length(samples)){
   smp <- samples[i]
   namS <- paste0(smp)
@@ -469,24 +581,50 @@ for (i in 1:length(samples)){
     namRP <- paste0(smp, "_piRNAs_", rSeq,  "_Pos_Tally")
     namRN <- paste0(smp, "_piRNAs_", rSeq, "_Neg_Tally")
     namRS <- paste0(smp, "_", rSeq, "_Tally_Matrix")
-    datP <- Tally_List[[(paste0(namRP))]]
+    datP <- piTally_List[[(paste0(namRP))]]
     colnames(datP) <- paste0("Pos_", colnames(datP))
-    datN <- Tally_List[[(paste0(namRN))]]
+    datN <- piTally_List[[(paste0(namRN))]]
     colnames(datN) <- paste0("Neg_", colnames(datN))
     datC <- cbind(datN, datP)
-    if(exists("Tally_List_Matrix")){
-      Tally_List_Matrix[[namRS]] <- datC
+    piTalMax <- maxCount( max(datC[,c(2:7)]), max(datC[,c(9:14)]))
+    if(exists("piTally_List_Matrix")){
+      piTally_List_Matrix[[namRS]] <- datC
     } else{
-      Tally_List_Matrix <- list()
-      Tally_List_Matrix[[namRS]] <- datC
+      piTally_List_Matrix <- list()
+      piTally_List_Matrix[[namRS]] <- datC
+    }
+  }
+  rm(smp,rSeq,namRP,namRN,namRS,datP,datN,datC)
+}
+#join the positive and negative reads into a single matrix for the siRNAs
+if(exists("siTally_List_Matrix")){rm(siTally_List_Matrix)}
+for (i in 1:length(samples)){
+  smp <- samples[i]
+  namS <- paste0(smp)
+  for (r in 1:length(refSeq)){
+    rSeq <- refSeq[r]
+    namRP <- paste0(smp, "_siRNAs_", rSeq,  "_Pos_Tally")
+    namRN <- paste0(smp, "_siRNAs_", rSeq, "_Neg_Tally")
+    namRS <- paste0(smp, "_", rSeq, "_Tally_Matrix")
+    datP <- siTally_List[[(paste0(namRP))]]
+    colnames(datP) <- paste0("Pos_", colnames(datP))
+    datN <- siTally_List[[(paste0(namRN))]]
+    colnames(datN) <- paste0("Neg_", colnames(datN))
+    datC <- cbind(datN, datP)
+    siTalMax <- maxCount( max(datC[,2]), max(datC[,4]))
+    if(exists("siTally_List_Matrix")){
+      siTally_List_Matrix[[namRS]] <- datC
+    } else{
+      siTally_List_Matrix <- list()
+      siTally_List_Matrix[[namRS]] <- datC
     }
   }
   rm(smp,rSeq,namRP,namRN,namRS,datP,datN,datC)
 }
 #map the piRNA overlaps
-for(i in 1:length(Tally_List_Matrix)){
-  namfile <- names(Tally_List_Matrix[i])
-  dat <- Tally_List_Matrix[[i]]
+for(i in 1:length(piTally_List_Matrix)){
+  namfile <- names(piTally_List_Matrix[i])
+  dat <- piTally_List_Matrix[[i]]
   nam <- paste0(namfile, "_2429")
   dat_2429 <- dat
   
@@ -538,38 +676,29 @@ for(i in 1:length(Tally_List_Matrix)){
     guides( fill = FALSE, alpha = FALSE)+
     scale_colour_discrete(name = "Size",labels=c('24', '25', "26", "27", "28", "29"))+
     guides(color=guide_legend(override.aes=list(fill=NA)))+
-    ggtitle(paste(nam))
-  
+    ggtitle(paste(nam))+
+    piMaker_theme
   plot(gg)
+  saveImage(paste0(nam))
 }    
 #make the overlap matrix
 overlap <- c(1:21) #will count overlaps of this length
 Split <- c("Pos", "Neg")#this is the two dimensions of the sequencing reads - doesn't need defining really!
-if(exists("siLap_List")){rm(siLap_List)}+
 if(exists("piLap_List")){rm(piLap_List)}+
-if(exists("Z_List")){rm(Z_List)}
-for(i in 1:length(Tally_List_Matrix)){
-  namfile <- names(Tally_List_Matrix[i])
-  namfile <- gsub("_Tally_Matrix","",namfile)
-  dat <- Tally_List_Matrix[[i]]
+  if(exists("pi_Z_List")){rm(pi_Z_List)}+
+  if(exists("piMax")){rm(piMax)}
+for(i in 1:length(piTally_List_Matrix)){
+  namp <- names(piTally_List_Matrix[i])
+  namp <- gsub("_Tally_Matrix","",namp)
+  datp <- piTally_List_Matrix[[i]]
   for(s in 1:length(c(Split))){
     spt <- Split[s]
-    namC <- paste0(namfile, spt, "_siRNA_Overlap")
-    namD <- paste0(namfile, spt, "_piRNA_Overlap")
+    namD <- paste0(namp, "_", spt, "_piRNA_Overlap")
     #get the overlaps
-    siLap <- piCatcher(dat, Length_In = c(21), Target_Length = c(21), Overlap = c(1:21), Split = spt)
-    piLap <- piCatcher(dat, Length_In = c(24:29), Target_Length = c(24:29), Overlap = c(1:21), Split = spt)
+    piLap <- piCatcher(datp, Length_In = c(24:29), Target_Length = c(24:29), Overlap = c(1:21), Split = spt)
     #count the overlaps
-    overSiLap <- overLaps(siLap, Overlap = c(1:21))
     overPiLap <- overLaps(piLap, Overlap = c(1:21))
-      if(exists("siLap_List")){
-        siLap_List[[namC]] <- overSiLap
-        rm(siLap)
-      }else{
-        siLap_List <- list()
-        siLap_List[[namC]] <- overSiLap
-        rm(siLap)
-      }
+    ifelse( exists("piMax"), piMax <- rbind( piMax, max(overPiLap$count) ), piMax <- c(max(overPiLap$count)) )
     if(exists("piLap_List")){
       piLap_List[[namD]] <- overPiLap
       rm(piLap)
@@ -578,54 +707,134 @@ for(i in 1:length(Tally_List_Matrix)){
       piLap_List[[namD]] <- overPiLap
       rm(piLap)
     }
-#now calculate the z-score from the overlaps
-siZscore <- Z_Score(overSiLap)
-piZscore <- Z_Score(overPiLap)
-    if(exists("Z_List")){
-      Z_List[[namC]] <- siZscore
-      Z_List[[namD]] <- piZscore
-      rm(siZscore, piZscore)
+    #now calculate the z-score from the overlaps
+    piZscore <- Z_Score(overPiLap)
+    if(exists("pi_Z_List")){
+      pi_Z_List[[namD]] <- piZscore
+      rm(piZscore)
     }else{
-      Z_List <- list()
-      Z_List[[namC]] <- siZscore
-      Z_List[[namD]] <- piZscore
-      rm(siZscore, piZscore)
+      pi_Z_List <- list()
+      pi_Z_List[[namD]] <- piZscore
+      rm(piZscore)
+    }
+  }
+}
+#overlap matrix for the siRNAs
+if(exists("siLap_List")){rm(siLap_List)}+
+  if(exists("si_Z_List")){rm(si_Z_List)}+
+  if(exists("siMAx")){rm(siMAx)}
+for(i in 1:length(siTally_List_Matrix)){
+  nams <- names(siTally_List_Matrix[i])
+  nams <- gsub("_Tally_Matrix","",nams)
+  dats <- siTally_List_Matrix[[i]]
+  for(s in 1:length(c(Split))){
+    spt <- Split[s]
+    namC <- paste0(nams, "_", spt, "_siRNA_Overlap")
+    #get the overlaps
+    siLap <- piCatcher(dats, Length_In = c(21), Target_Length = c(21), Overlap = c(1:21), Split = spt)
+    #count the overlaps
+    overSiLap <- overLaps(siLap, Overlap = c(1:21))
+    ifelse( exists("siMax"), siMax <- rbind( siMax, max(overSiLap$count) ), siMax <- c(max(overSiLap$count)) )
+    if(exists("siLap_List")){
+      siLap_List[[namC]] <- overSiLap
+      rm(siLap)
+    }else{
+      siLap_List <- list()
+      siLap_List[[namC]] <- overSiLap
+      rm(siLap)
+    }
+    #now calculate the z-score from the overlaps
+    siZscore <- Z_Score(overSiLap)
+    if(exists("si_Z_List")){
+      si_Z_List[[namC]] <- siZscore
+      rm(siZscore)
+    }else{
+      si_Z_List <- list()
+      si_Z_List[[namC]] <- siZscore
+      rm(siZscore)
     }
   }
 } 
-#plot the overlap and z-score
-i=1
+#plot the pi overlap and z-score for the piRNAs
 for (i in 1:length(samples)){
   namfile <- samples[i]
-  for(r in 1:length(refSeq))
+  for(r in 1:length(refSeq)){
     Rnam <- refSeq[r]
-  for(s in 1:length(Split))
-    spt <- Split[s]
-  dat <- piLap_List [[grep(paste0(namfile, "_", Rnam, spt, "_piRNA_Overlap"), names(piLap_List))]]
-  namd <- paste0(namfile, "_", Rnam, "_", spt)
-  datz <- Z_List [[grep(paste0(namfile, "_", Rnam, spt, "_piRNA_Overlap"), names(Z_List))]]
-
-gg <- ggplot(data = datz, aes(x = x, y = Z))+
-  geom_line(aes(colour = "red"), linewidth = 1 )+
-    ggtitle(paste0(namd))+
-  ylim(-5,5)+
-  ylab("Z-Score")+
-  xlab("Overlap (nt)")+
-  theme(legend.position="none")+
-  guides(colour = FALSE)+
-  theme(aspect.ratio = 0.25:1)
-plot(gg)
-
-gg <- ggplot(data = dat, aes(x = x, y = count))+
-  geom_col(aes(colour = "black"), linewidth = 1)+
-  ggtitle(paste0(namd))+
-  ylim(0,150)+
-  xlab("Overlap (nt)")+
-  ylab("No. of pairs")+
-  guides(colour = FALSE)
-plot(gg)
-
+    for(s in 1:length(Split)){
+      spt <- Split[s]
+      dat <- piLap_List [[grep(paste0(namfile, "_", Rnam, "_", spt, "_piRNA_Overlap"), names(piLap_List))]]
+      namd <- paste0(namfile, "_", Rnam, "_", spt)
+      datz <- pi_Z_List [[grep(paste0(namfile, "_", Rnam, "_", spt, "_piRNA_Overlap"), names(pi_Z_List))]]
+      
+      gz <- ggplot(data = datz, aes(x = x, y = Z))+
+        geom_line(aes(colour = "red"), linewidth = 1 )+
+        ggtitle(paste0(namd))+
+        ylim(-5,5)+
+        ylab("Z-Score")+
+        xlab("Overlap (nt)")+
+        theme(legend.position="none")+
+        guides(colour = FALSE)+
+        theme(aspect.ratio = 0.25:1)+
+        piMaker_theme
+      #plot(gz)
+      
+      go <- ggplot(data = dat, aes(x = x, y = count))+
+        geom_col(aes(colour = "black"), linewidth = 1)+
+        #ggtitle(paste0(namd))+
+        ylim(0, (max(piMax)+25))+
+        xlab("Overlap (nt)")+
+        ylab("No. of pairs")+
+        guides(colour = FALSE)+
+        piMaker_theme
+      #plot(go)
+      
+      fig <- ggarrange(gz +rremove("xlab") +rremove("x.text"), go , nrow = 2)
+      plot(fig)
+      imageSave(paste0(namd))
+    }
+  }
 }
+#plot the si overlap and z-score for the siRNAs
+for (i in 1:length(samples)){
+  namfile <- samples[i]
+  for(r in 1:length(refSeq)){
+    Rnam <- refSeq[r]
+    for(s in 1:length(Split)){
+      spt <- Split[s]
+      dat <- siLap_List [[grep(paste0(namfile, "_", Rnam, "_", spt, "_siRNA_Overlap"), names(siLap_List))]]
+      namd <- paste0(namfile, "_", Rnam, "_", spt)
+      datz <- si_Z_List [[grep(paste0(namfile, "_", Rnam, "_", spt, "_siRNA_Overlap"), names(si_Z_List))]]
+      
+      gz <- ggplot(data = datz, aes(x = x, y = Z))+
+        geom_line(aes(colour = "red"), linewidth = 1 )+
+        ggtitle(paste0(namd))+
+        ylim(-5,5)+
+        ylab("Z-Score")+
+        xlab("Overlap (nt)")+
+        theme(legend.position="none")+
+        guides(colour = FALSE)+
+        theme(aspect.ratio = 0.25:1)+
+        piMaker_theme
+      #plot(gz)
+      
+      go <- ggplot(data = dat, aes(x = x, y = count))+
+        geom_col(aes(colour = "black"), linewidth = 1)+
+        #ggtitle(paste0(namd))+
+        ylim(0, (max(siMax)+25))+
+        xlab("Overlap (nt)")+
+        ylab("No. of pairs")+
+        guides(colour = FALSE)+
+        piMaker_theme
+      #plot(go)
+      
+      fig <- ggarrange(gz +rremove("xlab") +rremove("x.text"), go , nrow = 2)
+      plot(fig)
+      imageSave(paste0(namd))
+    }
+  }
+}
+
+#FIN
     
     
     
