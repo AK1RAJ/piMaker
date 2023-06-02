@@ -393,3 +393,71 @@ saveImage <- function(x, SVG = T, PNG = T, scale = 1, width = 14, height = 14, u
   }
 }
 
+#calculate overlap probability per position
+piProb <- function(x, Overlap = c(1:21)) {
+  dat <- x
+  max <- ncol(dat)
+  min <- max - length(Overlap)
+  range <- ((min+1):(max))
+  res <- dat[,c(1,2)]
+  res$Lap_total <- rowSums(dat[,c(3:length(Overlap))], na.rm=TRUE)
+  
+  for (i in 1:length(range)){
+    
+    pos <- range[i]
+    nam <- paste0("By_",Overlap[i])
+    res[[nam]] <- ifelse(res$Lap_total > 0,
+                         ifelse( is.na(dat[,(pos)]/res$Lap_total),0, dat[,(pos)]/res$Lap_total ),
+                         0
+    )
+  }
+  
+  return(res)
+}
+
+piProbSum <- function(x, Overlap){ #clone of overLaps function but calculates probability by dividing input by total
+  #get input
+  Lap <-  x
+  lap <- data.frame(Lap[, grepl("By", colnames(Lap))])
+  oLap <- c()
+  #count the overlap totals from the corresponding column
+  for (o in 1:length(Overlap)){
+    
+    v <- sum(lap[,o], na.rm = TRUE)
+    
+    oLap[paste0("by_",o)] <- as.numeric(v)
+    
+  }
+  #arrange the data
+  oLaps <- as.data.frame(as.numeric(oLap))
+  oLaps$x <- as.numeric(row.names(oLaps))
+  oLaps <- oLaps[,c(2,1)]
+  colnames(oLaps) <- c("x", "Probability")
+  oLaps$Probability <- oLaps$Probability/sum(oLaps$Probability)
+  #return the data
+  return(oLaps)
+}
+
+#calculate weighted overlap probability per position
+piProbWeighted <- function(x, Overlap = c(1:21)) {
+  dat <- x
+  max <- ncol(dat)
+  min <- max - length(Overlap)
+  range <- ((min+1):(max))
+  res <- dat[,c(1,2)]
+  res$Lap_total <- rowSums(dat[,c(3:length(Overlap))], na.rm=TRUE)
+  
+  res$weighting <- res$Total/sum(res$Total)
+  
+  for (i in 1:length(range)){
+    
+    pos <- range[i]
+    nam <- paste0("By_",Overlap[i])
+    res[[nam]] <- ifelse(res$Lap_total > 0,
+                         ifelse( is.na(dat[,(pos)]/res$Lap_total),0, (dat[,(pos)]/res$Lap_total)*res$weighting ),
+                         0
+    )
+  }
+  
+  return(res)
+}
