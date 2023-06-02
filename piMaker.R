@@ -1,8 +1,8 @@
 #Themes and Libraries####
 # Package names
 #this code uses the stringr, ggplot2, purrr and dplyr packages 
-#from the tidyverse so it might be easier to install the whole tidyverse if wanted
-packages <- c("BiocManager", "stringr" , "dplyr", "ggplot2", "purrr", "Biostrings",  "Rsamtools", "ggseqlogo", "ggpubr" )
+#from the tidyverse so it might be easier to install the whole tidyverse if wanted....
+packages <- c( "BiocManager", "stringr" , "dplyr", "ggplot2", "purrr", "Biostrings",  "Rsamtools", "ggseqlogo", "ggpubr" )
 
 # Install packages not yet installed
 installed_packages <- packages %in% rownames(installed.packages())
@@ -11,7 +11,7 @@ if (any(installed_packages == FALSE)) {
 }
 # Packages loading
 invisible(lapply(packages, library, character.only = TRUE))
-
+# Rsamtools might require forced installation on newer versions of R : BiocManager::install("Rsamtools", force = T)
 #load the functions from here
 source("https://raw.githubusercontent.com/AK1RAJ/piMaker/main/piMaker_functions.R")
 
@@ -23,13 +23,15 @@ savefiles = F #T/F option on whether to save the output plots or not
 #set working directory and get the files####
 #make a project folder with three subfolders for 1- the BAM files (BAM), 2- the reference sequences (refSeq)
 #3- the output (Output)
-DIR <- "F:/TidyCode"
-BAM <- paste0(DIR,"/BAM")
-REF <- paste0(DIR,"/refSeq")
-OUT <- paste0(DIR,"/Test")
-setwd(paste(REF))
+
+DIR <-                   #"C:/" put your directory here
+BAM <- paste0(DIR,"/BAM") #location of the BAM alignment files
+REF <- paste0(DIR,"/refSeq") #location of the reference sequences if you have them, if not do not run the first bit of code
+OUT <- paste0(DIR,"/Output") #this directory is only used if you set the savefiles to true
+
 #get the genome length, if this is not done, the length will be calculated from 
 #the BAM file, but may miss uncovered regions
+
 setwd(paste(REF))
 refSeq <- sub('\\..[^\\.]*$', '',(c(list.files(full.names = FALSE, include.dirs = FALSE, no.. = FALSE ))))
 if(exists("GenLength")){rm(GenLength)}
@@ -41,12 +43,14 @@ for (i in 1:length(refSeq)) {
   GenLength <- data.frame(GenLength)
   if(i == length(refSeq)){rm(dat, gm)}
 }
+
 #make the file list
 setwd(BAM)
 files <- BamFileList((c(list.files(full.names = FALSE, #list of the BAM files
                                    include.dirs = TRUE, no.. = FALSE ))))
 #assign the samples here
 samples <- c("MOCK", "rTOSV")
+
 #read in the files 
 if(exists("BAMList")){rm(BAMList, MaxCount)}
 for (i in 1:length(files)){
@@ -279,7 +283,6 @@ DNA_col_scheme =  make_col_scheme(chars=c('A', 'T', 'G', 'C'), groups= NULL,
 
 Sizes <- c(24:29) #put in the piRNA sizes we are looking for here
 #21nt siRNAs are dealt with separately for overlap and z score calculations
-setwd(paste(OUT))
 #make long frames of the sequences, first filter the data sets by size
 if(exists("piList")){rm(piList)}+
 if(exists("siList")){rm(siList)}
@@ -595,7 +598,7 @@ for (i in 1:length(samples)){
       piTally_List_Matrix[[namRS]] <- datC
     }
   }
-  rm(smp,rSeq,namRP,namRN,namRS,datP,datN,datC)
+  rm(smp,rSeq,namRP,namRN,namRS,datP,datN,datC,piTalMax)
 }
 #join the positive and negative reads into a single matrix for the siRNAs
 if(exists("siTally_List_Matrix")){rm(siTally_List_Matrix, siMax)}
@@ -621,7 +624,7 @@ for (i in 1:length(samples)){
       siTally_List_Matrix[[namRS]] <- datC
     }
   }
-  rm(smp,rSeq,namRP,namRN,namRS,datP,datN,datC)
+  rm(smp,rSeq,namRP,namRN,namRS,datP,datN,datC,siTalMax)
 }
 #map the piRNA overlaps
 for(i in 1:length(piTally_List_Matrix)){
@@ -642,9 +645,9 @@ for(i in 1:length(piTally_List_Matrix)){
   gg <- ggplot()+
     geom_hline(yintercept = 0, linetype = "solid", colour = "grey")+
     geom_rect(data = dat_2429, aes(ymin = 0, ymax = Pos_24, xmin = Pos_24_x,
-                                   xmax = Pos_24_xend, colour = "red", fill = "red", group = "24",  alpha = 0.4))+
+                                   xmax = Pos_24_xend, colour = "red", fill = "red", alpha = 0.4))+
     geom_rect(data = dat_2429, aes(ymin = 0, ymax = - Neg_24, xmin = Neg_24_x,
-                                   xmax = Neg_24_xend, colour = "red", fill = "red",  group = "24", alpha = 0.4))+ 
+                                   xmax = Neg_24_xend, colour = "red", fill = "red", alpha = 0.4))+ 
     
     
     geom_rect(data = dat_2429, aes(ymin = 0, ymax = Pos_25, xmin = Pos_25_x,
@@ -677,7 +680,9 @@ for(i in 1:length(piTally_List_Matrix)){
     ylim(-max(piMax),max(piMax))+
     guides( fill = FALSE, alpha = FALSE)+
     scale_colour_discrete(name = "Size",labels=c('24', '25', "26", "27", "28", "29"))+
-    guides(color=guide_legend(override.aes=list(fill=NA)))+
+    guides(color = guide_legend(override.aes=list(shape = 22, alpha = 0.05,
+                                                  colour = c("red","black","green","orange","blue","purple"), 
+                                                  fill = c("red","black","green","orange","blue","purple"))))+
     ggtitle(paste(nam))+
     piMaker_theme
   plot(gg)
@@ -688,7 +693,7 @@ overlap <- c(1:21) #will count overlaps of this length
 Split <- c("Pos", "Neg")#this is the two dimensions of the sequencing reads - doesn't need defining really!
 if(exists("piLap_List")){rm(piLap_List)}+
   if(exists("pi_Z_List")){rm(pi_Z_List)}+
-  if(exists("piMax")){rm(piMax)}
+  if(exists("piMax2")){rm(piMax2)}
 for(i in 1:length(piTally_List_Matrix)){
   namp <- names(piTally_List_Matrix[i])
   namp <- gsub("_Tally_Matrix","",namp)
@@ -700,7 +705,7 @@ for(i in 1:length(piTally_List_Matrix)){
     piLap <- piCatcher(datp, Length_In = c(24:29), Target_Length = c(24:29), Overlap = c(1:21), Split = spt)
     #count the overlaps
     overPiLap <- overLaps(piLap, Overlap = c(1:21))
-    ifelse( exists("piMax"), piMax <- rbind( piMax, max(overPiLap$count) ), piMax <- c(max(overPiLap$count)) )
+    ifelse( exists("piMax2"), piMax2 <- rbind( piMax2, max(overPiLap$count) ), piMax2 <- c(max(overPiLap$count)) )
     if(exists("piLap_List")){
       piLap_List[[namD]] <- overPiLap
       rm(piLap)
@@ -724,7 +729,7 @@ for(i in 1:length(piTally_List_Matrix)){
 #overlap matrix for the siRNAs
 if(exists("siLap_List")){rm(siLap_List)}+
   if(exists("si_Z_List")){rm(si_Z_List)}+
-  if(exists("siMAx")){rm(siMAx)}
+  if(exists("siMAx2")){rm(siMAx2)}
 for(i in 1:length(siTally_List_Matrix)){
   nams <- names(siTally_List_Matrix[i])
   nams <- gsub("_Tally_Matrix","",nams)
@@ -736,7 +741,7 @@ for(i in 1:length(siTally_List_Matrix)){
     siLap <- piCatcher(dats, Length_In = c(21), Target_Length = c(21), Overlap = c(1:21), Split = spt)
     #count the overlaps
     overSiLap <- overLaps(siLap, Overlap = c(1:21))
-    ifelse( exists("siMax"), siMax <- rbind( siMax, max(overSiLap$count) ), siMax <- c(max(overSiLap$count)) )
+    ifelse( exists("siMax2"), siMax2 <- rbind( siMax, max(overSiLap$count) ), siMax2 <- c(max(overSiLap$count)) )
     if(exists("siLap_List")){
       siLap_List[[namC]] <- overSiLap
       rm(siLap)
@@ -783,7 +788,7 @@ for (i in 1:length(samples)){
       go <- ggplot(data = dat, aes(x = x, y = count))+
         geom_col(aes(colour = "black"), linewidth = 1)+
         #ggtitle(paste0(namd))+
-        ylim(0, (max(piMax)+25))+
+        ylim(0, (max(piMax2)+25))+
         xlab("Overlap (nt)")+
         ylab("No. of pairs")+
         guides(colour = FALSE)+
@@ -822,7 +827,7 @@ for (i in 1:length(samples)){
       go <- ggplot(data = dat, aes(x = x, y = count))+
         geom_col(aes(colour = "black"), linewidth = 1)+
         #ggtitle(paste0(namd))+
-        ylim(0, (max(siMax)+25))+
+        ylim(0, (max(siMax2)+25))+
         xlab("Overlap (nt)")+
         ylab("No. of pairs")+
         guides(colour = FALSE)+
