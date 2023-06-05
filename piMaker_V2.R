@@ -18,7 +18,7 @@ source("https://raw.githubusercontent.com/AK1RAJ/piMaker/main/piMaker_functions.
 #test Bam files are at https://github.com/AK1RAJ/piMaker/tree/main/BAM
 #test reference sequences are at: https://github.com/AK1RAJ/piMaker/tree/main/refSeq
 
-savefiles = F #T/F option on whether to save the output plots or not
+savefiles = T #T/F option on whether to save the output plots or not
 
 #set working directory and get the files####
 #make a project folder with three subfolders for 1- the BAM files (BAM), 2- the reference sequences (refSeq)
@@ -690,9 +690,8 @@ for(i in 1:length(piTally_List_Matrix)){
 }    
 #make the overlap matrix
 overlap <- c(1:21) #will count overlaps of this length
-Split <- c("Pos", "Neg")#this is the two dimensions of the sequencing reads - doesn't need defining really!
-if(exists("piLap_List")){rm(piLap_List)}+
-  if(exists("pi_Z_List")){rm(pi_Z_List)}+
+Split <- c("Pos", "Neg")#this is the two dimensions of the sequencing reads - doesn't need defining really! 
+if(exists("pi_Signature_List")){rm(piLap_List)}+
   if(exists("piMax2")){rm(piMax2)}
 for(i in 1:length(piTally_List_Matrix)){
   namp <- names(piTally_List_Matrix[i])
@@ -712,33 +711,29 @@ for(i in 1:length(piTally_List_Matrix)){
     #calculate weighted probability for the overlap length
     piProbWeightedTot <- piProbSum(piLapProbWeighted, Overlap = c(1:21))
     #merge the probabilities
-    piProbability <- cbind(piProbTot, piProbWeightedTot$Probability)
+    piProbability <- cbind(piProbTot$Probability, piProbWeightedTot$Probability)
+    colnames(piProbability) <- c("Probability", "Weighted_Probability")
     #count the overlaps
     overPiLap <- overLaps(piLap, Overlap = c(1:21))
     ifelse( exists("piMax2"), piMax2 <- rbind( piMax2, max(overPiLap$count) ), piMax2 <- c(max(overPiLap$count)) )
-    if(exists("piLap_List")){
-      piLap_List[[namD]] <- overPiLap
-      rm(piLap)
-    }else{
-      piLap_List <- list()
-      piLap_List[[namD]] <- overPiLap
-      rm(piLap)
-    }
     #now calculate the z-score from the overlaps
     piZscore <- Z_Score(overPiLap)
-    if(exists("pi_Z_List")){
-      pi_Z_List[[namD]] <- piZscore
+    results <- cbind(piZscore, piProbability)
+    
+    if(exists("pi_Signature_List")){
+      pi_Signature_List[[namD]] <- results
       rm(piZscore)
     }else{
-      pi_Z_List <- list()
-      pi_Z_List[[namD]] <- piZscore
+      pi_Signature_List <- list()
+      pi_Signature_List[[namD]] <- results
       rm(piZscore)
     }
   }
+  rm(piLap,piLapProb,piLapProbWeighted,piProbTot,piProbWeightedTot,piProbability,overPiLap)
 }
 #overlap matrix for the siRNAs
-if(exists("siLap_List")){rm(siLap_List)}+
-  if(exists("si_Z_List")){rm(si_Z_List)}+
+
+if(exists("si_Signature_List")){rm(si_Z_List)}+
   if(exists("siMAx2")){rm(siMAx2)}
 for(i in 1:length(siTally_List_Matrix)){
   nams <- names(siTally_List_Matrix[i])
@@ -750,48 +745,52 @@ for(i in 1:length(siTally_List_Matrix)){
     #get the overlaps
     siLap <- piCatcher(dats, Length_In = c(21), Target_Length = c(21), Overlap = c(1:21), Split = spt)
     #count the overlaps
+    siLapProb <- piProb(siLap, Overlap = c(1:21))
+    #get weighted probability for each position
+    siLapProbWeighted <- piProbWeighted(siLap, Overlap = c(1:21))
+    #calculate probability for the overlap length
+    siProbTot <- piProbSum(siLapProb, Overlap = c(1:21))
+    #calculate weighted probability for the overlap length
+    siProbWeightedTot <- piProbSum(siLapProbWeighted, Overlap = c(1:21))
+    #merge the probabilities
+    siProbability <- cbind(siProbTot$Probability, siProbWeightedTot$Probability)
+    colnames(siProbability) <- c("Probability", "Weighted_Probability")
+    #count the overlaps
     overSiLap <- overLaps(siLap, Overlap = c(1:21))
-    ifelse( exists("siMax2"), siMax2 <- rbind( siMax, max(overSiLap$count) ), siMax2 <- c(max(overSiLap$count)) )
-    if(exists("siLap_List")){
-      siLap_List[[namC]] <- overSiLap
-      rm(siLap)
-    }else{
-      siLap_List <- list()
-      siLap_List[[namC]] <- overSiLap
-      rm(siLap)
-    }
+    ifelse( exists("siMax2"), siMax2 <- rbind( siMax2, max(overSiLap$count) ), siMax2 <- c(max(overSiLap$count)) )
     #now calculate the z-score from the overlaps
     siZscore <- Z_Score(overSiLap)
-    if(exists("si_Z_List")){
-      si_Z_List[[namC]] <- siZscore
+    results <- cbind(siZscore, siProbability)
+    if(exists("si_Signature_List")){
+      si_Signature_List[[namC]] <- results
       rm(siZscore)
     }else{
-      si_Z_List <- list()
-      si_Z_List[[namC]] <- siZscore
+      si_Signature_List <- list()
+      si_Signature_List[[namC]] <- results
       rm(siZscore)
     }
   }
+  rm(siLap,siLapProb,siLapProbWeighted,siProbTot,siProbWeightedTot,siProbability,overSiLap)
 } 
-#plot the pi overlap and z-score for the piRNAs
+#plot the pi overlap and z-score for the piRNAs 
 for (i in 1:length(samples)){
   namfile <- samples[i]
   for(r in 1:length(refSeq)){
     Rnam <- refSeq[r]
     for(s in 1:length(Split)){
       spt <- Split[s]
-      dat <- piLap_List [[grep(paste0(namfile, "_", Rnam, "_", spt, "_piRNA_Overlap"), names(piLap_List))]]
-      namd <- paste0(namfile, "_", Rnam, "_", spt)
-      datz <- pi_Z_List [[grep(paste0(namfile, "_", Rnam, "_", spt, "_piRNA_Overlap"), names(pi_Z_List))]]
+      dat <- pi_Signature_List [[grep(paste0(namfile, "_", Rnam, "_", spt, "_piRNA_Overlap"), names(pi_Signature_List))]]
+      namd <- paste0(namfile, "_", Rnam, "_", spt, "_pi")
       
-      gz <- ggplot(data = datz, aes(x = x, y = Z))+
+      gz <- ggplot(data = dat, aes(x = x, y = Z))+
         geom_line(aes(colour = "red"), linewidth = 1 )+
-        ggtitle(paste0(namd))+
+        #ggtitle(paste0(namd))+
         ylim(-5,5)+
         ylab("Z-Score")+
         xlab("Overlap (nt)")+
         theme(legend.position="none")+
         guides(colour = FALSE)+
-        theme(aspect.ratio = 0.25:1)+
+        #theme(aspect.ratio = 0.25:1)+
         piMaker_theme
       #plot(gz)
       
@@ -805,8 +804,34 @@ for (i in 1:length(samples)){
         piMaker_theme
       #plot(go)
       
-      fig <- ggarrange(gz +rremove("xlab") +rremove("x.text"), go , nrow = 2)
-      plot(fig)
+      gp <- ggplot(data = dat, aes(x = x, y = Probability))+
+        geom_line(colour = "blue", linewidth = 1 )+
+        #ggtitle(paste0(namd))+
+        #ylim(-1,1)+
+        ylab("Probability")+
+        xlab("Overlap (nt)")+
+        theme(legend.position="none")+
+        guides(colour = FALSE)+
+        #theme(aspect.ratio = 0.25:1)+
+        piMaker_theme
+      #plot(gp)
+      
+      gpw <- ggplot(data = dat, aes(x = x, y = Weighted_Probability))+
+        geom_line(colour = "blue", linewidth = 1 )+
+        #ggtitle(paste0(namd))+
+        #ylim(-1,1)+
+        ylab("Weighted probability")+
+        xlab("Overlap (nt)")+
+        theme(legend.position="none")+
+        guides(colour = FALSE)+
+        #theme(aspect.ratio = 0.25:1)+
+        piMaker_theme
+      #plot(gpw)
+      
+      fig <- ggarrange(gz +rremove("xlab") +rremove("x.text"),  gp +rremove("xlab") +rremove("x.text"), go  ,gpw, nrow = 2, ncol = 2 )
+      annotate_figure(fig, top = text_grob(paste0(namd), 
+                                            color = "darkslategrey", face = "bold", size = 14))
+      #plot(fig)
       saveImage(paste0(namd))
     }
   }
@@ -818,19 +843,18 @@ for (i in 1:length(samples)){
     Rnam <- refSeq[r]
     for(s in 1:length(Split)){
       spt <- Split[s]
-      dat <- siLap_List [[grep(paste0(namfile, "_", Rnam, "_", spt, "_siRNA_Overlap"), names(siLap_List))]]
-      namd <- paste0(namfile, "_", Rnam, "_", spt)
-      datz <- si_Z_List [[grep(paste0(namfile, "_", Rnam, "_", spt, "_siRNA_Overlap"), names(si_Z_List))]]
+      dat <- si_Signature_List [[grep(paste0(namfile, "_", Rnam, "_", spt, "_siRNA_Overlap"), names(si_Signature_List))]]
+      namd <- paste0(namfile, "_", Rnam, "_", spt, "_si")
       
-      gz <- ggplot(data = datz, aes(x = x, y = Z))+
+      gz <- ggplot(data = dat, aes(x = x, y = Z))+
         geom_line(aes(colour = "red"), linewidth = 1 )+
-        ggtitle(paste0(namd))+
+        #ggtitle(paste0(namd))+
         ylim(-5,5)+
         ylab("Z-Score")+
         xlab("Overlap (nt)")+
         theme(legend.position="none")+
         guides(colour = FALSE)+
-        theme(aspect.ratio = 0.25:1)+
+        #theme(aspect.ratio = 0.25:1)+
         piMaker_theme
       #plot(gz)
       
@@ -844,8 +868,33 @@ for (i in 1:length(samples)){
         piMaker_theme
       #plot(go)
       
-      fig <- ggarrange(gz +rremove("xlab") +rremove("x.text"), go , nrow = 2)
-      plot(fig)
+      gp <- ggplot(data = dat, aes(x = x, y = Probability))+
+        geom_line(colour = "blue", linewidth = 1 )+
+        #ggtitle(paste0(namd))+
+        #ylim(-1,1)+
+        ylab("Probability")+
+        xlab("Overlap (nt)")+
+        theme(legend.position="none")+
+        guides(colour = FALSE)+
+        #theme(aspect.ratio = 0.25:1)+
+        piMaker_theme
+      #plot(gp)
+      
+      gpw <- ggplot(data = dat, aes(x = x, y = Weighted_Probability))+
+        geom_line(colour = "blue", linewidth = 1 )+
+        #ggtitle(paste0(namd))+
+        #ylim(-1,1)+
+        ylab("Weighted probability")+
+        xlab("Overlap (nt)")+
+        theme(legend.position="none")+
+        guides(colour = FALSE)+
+        #theme(aspect.ratio = 0.25:1)+
+        piMaker_theme
+      #plot(gpw)
+      
+      fig <- ggarrange(gz +rremove("xlab") +rremove("x.text"),  gp +rremove("xlab") +rremove("x.text"), go  ,gpw, nrow = 2, ncol = 2 )
+      annotate_figure(fig, top = text_grob(paste0(namd), 
+                                           color = "darkslategrey", face = "bold", size = 14))
       saveImage(paste0(namd))
     }
   }
