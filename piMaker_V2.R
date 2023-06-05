@@ -722,17 +722,16 @@ for(i in 1:length(piTally_List_Matrix)){
     
     if(exists("pi_Signature_List")){
       pi_Signature_List[[namD]] <- results
-      rm(piZscore)
+      rm(results)
     }else{
       pi_Signature_List <- list()
       pi_Signature_List[[namD]] <- results
-      rm(piZscore)
+      rm(results)
     }
   }
-  rm(piLap,piLapProb,piLapProbWeighted,piProbTot,piProbWeightedTot,piProbability,overPiLap)
+  rm(piLap,piLapProb,piLapProbWeighted,piProbTot,piProbWeightedTot,piProbability,overPiLap,piZscore)
 }
 #overlap matrix for the siRNAs
-
 if(exists("si_Signature_List")){rm(si_Z_List)}+
   if(exists("siMAx2")){rm(siMAx2)}
 for(i in 1:length(siTally_List_Matrix)){
@@ -763,14 +762,14 @@ for(i in 1:length(siTally_List_Matrix)){
     results <- cbind(siZscore, siProbability)
     if(exists("si_Signature_List")){
       si_Signature_List[[namC]] <- results
-      rm(siZscore)
+      rm(results)
     }else{
       si_Signature_List <- list()
       si_Signature_List[[namC]] <- results
-      rm(siZscore)
+      rm(results)
     }
   }
-  rm(siLap,siLapProb,siLapProbWeighted,siProbTot,siProbWeightedTot,siProbability,overSiLap)
+  rm(siLap,siLapProb,siLapProbWeighted,siProbTot,siProbWeightedTot,siProbability,overSiLap,siZscore)
 } 
 #plot the pi overlap and z-score for the piRNAs 
 for (i in 1:length(samples)){
@@ -900,6 +899,45 @@ for (i in 1:length(samples)){
   }
 }
 
+
+for(i in 1:length(piTally_List_Matrix)){
+  namp <- names(piTally_List_Matrix[i])
+  namp <- gsub("_Tally_Matrix","",namp)
+  datp <- piTally_List_Matrix[[i]]
+  for(s in 1:length(c(Split))){
+    spt <- Split[s]
+    namD <- paste0(namp, "_", spt, "_piRNA_Overlap")
+    #get the overlaps
+    piLap <- piCatcher(datp, Length_In = c(24:29), Target_Length = c(24:29), Overlap = c(1:21), Split = spt)
+    #get overlap probability for each position
+    piLapProb <- piProb(piLap, Overlap = c(1:21))
+    #get weighted probability for each position
+    piLapProbWeighted <- piProbWeighted(piLap, Overlap = c(1:21))
+    #calculate probability for the overlap length
+    piProbTot <- piProbSum(piLapProb, Overlap = c(1:21))
+    #calculate weighted probability for the overlap length
+    piProbWeightedTot <- piProbSum(piLapProbWeighted, Overlap = c(1:21))
+    #merge the probabilities
+    piProbability <- cbind(piProbTot$Probability, piProbWeightedTot$Probability)
+    colnames(piProbability) <- c("Probability", "Weighted_Probability")
+    #count the overlaps
+    overPiLap <- overLaps(piLap, Overlap = c(1:21))
+    ifelse( exists("piMax2"), piMax2 <- rbind( piMax2, max(overPiLap$count) ), piMax2 <- c(max(overPiLap$count)) )
+    #now calculate the z-score from the overlaps
+    piZscore <- Z_Score(overPiLap)
+    results <- cbind(piZscore, piProbability)
+    
+    if(exists("pi_Signature_List")){
+      pi_Signature_List[[namD]] <- results
+      rm(results)
+    }else{
+      pi_Signature_List <- list()
+      pi_Signature_List[[namD]] <- results
+      rm(results)
+    }
+  }
+  rm(piLap,piLapProb,piLapProbWeighted,piProbTot,piProbWeightedTot,piProbability,overPiLap,piZscore)
+}
 #FIN
     
     
