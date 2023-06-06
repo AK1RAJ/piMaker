@@ -899,7 +899,6 @@ for (i in 1:length(samples)){
   }
 }
 
-
 for(i in 1:length(piTally_List_Matrix)){
   namp <- names(piTally_List_Matrix[i])
   namp <- gsub("_Tally_Matrix","",namp)
@@ -938,13 +937,138 @@ for(i in 1:length(piTally_List_Matrix)){
   }
   rm(piLap,piLapProb,piLapProbWeighted,piProbTot,piProbWeightedTot,piProbability,overPiLap,piZscore)
 }
+
+for(i in 1:length(piTally_List_Matrix)){
+  namp <- names(piTally_List_Matrix[i])
+  namp <- gsub("_Tally_Matrix","",namp)
+  datp <- piTally_List_Matrix[[i]]
+  results <- piCatcherDual(datp, Length_In = c(24:29), Target_Length = c(24:29), Overlap = c(1:21))
+  if(exists("pi_Signatures")){
+    pi_Signatures[[namp]] <- results
+    rm(results)
+  }else{
+    pi_Signatures <- list()
+    pi_Signatures[[namp]] <- results
+    rm(results)
+  }
+}
+  
 #FIN
-    
-    
-    
 
-
-
+    
+#make piRNA position matrix for each sample
+if(exists("piMatrixIndividual")){rm(piMatrixIndividual)}
+for (i in 1:(length(piList))) { 
+  namfile <- names(piList[i])
+  data <- piList[[i]]
+  for (r in 1:(length(refSeq))) {
+    rSeq <- refSeq[r]
+    nam <- paste0(namfile, "_", rSeq)
+    rsq <- makeRsq(rSeq)
+    datr <- filter(data, data$rname == rSeq)
+    freq <- piFreq(datr)
+    piC <- maxCount(freq$Neg, freq$Pos)
+    ifelse(exists("piCountInd"), piCountInd <- rbind(piCountInd, piC), piCountInd <- piC)
+    if(exists("piMatrixIndividual")){
+      piMatrixIndividual[[nam]] <- freq
+    }else{
+      piMatrixIndividual <- list()
+      piMatrixIndividual[[nam]] <- freq
+    }    
+  }
+  rm(data,datr,freq,piC)
+}    
+#this can take a while! rm(Count) s=1
+if(exists("piTally_List_Individual")){rm(piTally_List_Individual)}
+for (i in 1:(length(piList))) {
+  namfile <- names(piList[i])
+  data <- piList[[i]]
+  for (r in 1:(length(refSeq))) {
+    rSeq <- refSeq[r]
+    datr <- dplyr::filter(data, data$rname == rSeq)
+    datr <- split(datr, datr$strand)
+    datr <- datr[-3]
+    GenPosn <- c(1:makeRsq(rSeq))
+    for (s in 1:length(datr)) {
+      spt <- names(datr[s])
+      ifelse(names(datr[s]) == "+", namC <- "Pos", namC <- "Neg")
+      namB <- paste0(namfile,"_", rSeq,"_", namC, "_Tally")
+      datS <- datr[[s]]
+      if(names(datr[s]) == "-"){
+        datS$pos <- datS$pos + datS$qwidth#this makes sure the 5' of the negative strand is in the correct position
+      }
+      for(t in 1:length(GenPosn)){
+        targ <- as.numeric(GenPosn[t])#sets a target for a single nucleotide in the genome t=25
+        pat <- (dplyr::filter(datS, datS$pos == targ))#returns all reads at that target position
+        if(is.na(pat[1,1])){
+          pat[1,] <-  c(paste0(rSeq), paste0(spt), (paste0(GenPosn[t])),(0L),(0L))
+        }#sets a grid of 0 if there are no reads at the target position
+        pat <- pat[,3:4]#removes excess input
+        res <- countMatrix(pat, Count = c(24:29))#returns sum of the count of read length at the target
+        res <- data.frame(t(res))
+        row.names(res) <- targ
+        res$pos <- as.numeric(row.names(res))
+        res <- res[, c( ncol(res), (1:(ncol(res)-1))  )]
+        ifelse(exists("result_Ind"), result_Ind <- rbind(result_Ind, res), result_Ind <- res)
+      }
+      if(exists("piTally_List_Individual")){
+        colnames(result_Ind) <- c("pos", c(24:29))
+        piTally_List_Individual[[namB]] <- result_Ind
+        rm(result_Ind,res)
+      }else{
+        piTally_List_Individual <- list()
+        colnames(result_Ind) <- c("pos", c(24:29))
+        piTally_List_Individual[[namB]] <- result_Ind
+        rm(result_Ind,res)
+      }
+    }
+  }
+  rm(datS)
+}
+#join the positive and negative reads into a single matrix for the piRNAs 
+if(exists("piTally_List_Matrix_Individual")){rm(piTally_List_Matrix_Individual, piMaxInd)}
+for (i in 1:length(samples)){
+  smp <- samples[i]
+  namS <- paste0(smp)
+  for (n in 1:3){
+    num <- n
+    for (r in 1:length(refSeq)){
+      rSeq <- refSeq[r]
+      namRP <- paste0(smp, "_", n, "_piSequences_", rSeq,  "_Pos_Tally")
+      namRN <- paste0(smp, "_", n, "_piSequences_", rSeq, "_Neg_Tally")
+      namRS <- paste0(smp, "_", n, "_", rSeq, "_Tally_Matrix")
+      datP <- piTally_List_Individual[[(paste0(namRP))]]
+      colnames(datP) <- paste0("Pos_", colnames(datP))
+      datN <- piTally_List_Individual[[(paste0(namRN))]]
+      colnames(datN) <- paste0("Neg_", colnames(datN))
+      datC <- cbind(datN, datP)
+      piTalMax <- maxCount( max(datC[,c(2:7)]), max(datC[,c(9:14)]))
+      ifelse(exists("piMaxInd"), v <- rbind(piMaxInd,piTalMax), piMaxInd <- piTalMax)
+      
+      if(exists("piTally_List_Matrix_Individual")){
+        piTally_List_Matrix_Individual[[namRS]] <- datC
+      } else{
+        piTally_List_Matrix_Individual <- list()
+        piTally_List_Matrix_Individual[[namRS]] <- datC
+      }
+    }
+  }
+  rm(smp,rSeq,namRP,namRN,namRS,datP,datN,datC,piTalMax)
+}
+for(i in 1:length(piTally_List_Matrix_Individual)){
+  namp <- names(piTally_List_Matrix_Individual[i])
+  namp <- gsub("_Tally_Matrix","",namp)
+  datp <- piTally_List_Matrix_Individual[[i]]
+  results <- piCatcherDual(datp, Length_In = c(24:29), Target_Length = c(24:29), Overlap = c(1:21))
+  if(exists("pi_Signatures_Individual")){
+    pi_Signatures_Individual[[namp]] <- results
+    rm(results)
+  }else{
+    pi_Signatures_Individual <- list()
+    pi_Signatures_Individual[[namp]] <- results
+    rm(results)
+  }
+}
 
 
 
