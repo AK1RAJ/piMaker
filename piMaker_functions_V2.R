@@ -220,10 +220,10 @@ overLaps <- function(x, Overlap){
   return(oLaps)
 }
 
-piCatcher <- function(x, Length_In , Target_Length , Overlap, Split = spt){
+piCatcher <- function(x, Length_In , Target_Length , Overlap, Split){
   
   input <- x
-  
+  lap <-c()
   #split the data into the opposing strands
   datIn <- data.frame(input[, grepl(paste0(Split), colnames(input))])
   datIn <- data.frame(datIn[, names(dplyr::select(datIn, matches(c( as.character(Length_In)))))])#makes sure we only keep the lengths we want
@@ -232,6 +232,7 @@ piCatcher <- function(x, Length_In , Target_Length , Overlap, Split = spt){
   datIn$Total <- rowSums(datIn)
   datIn$pos <- row.names(datIn)
   lap <- datIn[, c( (ncol(datIn)), (ncol(datIn)-1) ), drop = F]
+  row.names(lap) <- lap$pos
   
   #split the data into the opposing strands
   datO <- data.frame(input[, !grepl(paste0(Split), colnames(input))])
@@ -241,6 +242,8 @@ piCatcher <- function(x, Length_In , Target_Length , Overlap, Split = spt){
   datO$Total <- rowSums(datO)
   datO$pos <- row.names(datO)
   datO <- datO[, c( (ncol(datO)), (ncol(datO)-1) ), drop = F]
+  
+  result <- c()
   
   for (i in 1:nrow(lap)){
     
@@ -277,11 +280,11 @@ piCatcher <- function(x, Length_In , Target_Length , Overlap, Split = spt){
     ifelse( ( exists("result") ), result <- rbind( result, res ), result <- res) 
     
   }
-  
-  
-  lap <- cbind(lap, result)
+
+
+  Lap <- cbind(lap, result)
   rm(result, Target_Length, Length_In, Overlap)
-  return(lap)
+  return(Lap)
 } 
 
 #gets the frequency of piRNAs by position
@@ -462,47 +465,35 @@ piProbWeighted <- function(x, Overlap = c(1:21)) {
   return(res)
 }
 
-piCatcherDual <- function(x, Length_In , Target_Length , Overlap){
+
+piCatcherPos <- function(x, Length_In = parent.frame()$Length_In, 
+                         Target_Length = parent.frame()$Target_Length, 
+                         Overlap = parent.frame()$Overlap, 
+                         Split = "Pos"){
   
   input <- x
-  Split <- "Pos"
-  SplitO <- "Neg"
-  
+  lap <-c()
   #split the data into the opposing strands
   datIn <- data.frame(input[, grepl(paste0(Split), colnames(input))])
   datIn <- data.frame(datIn[, names(dplyr::select(datIn, matches(c( as.character(Length_In)))))])#makes sure we only keep the lengths we want
   
-  datInOp <- data.frame(input[, grepl(paste0(SplitO), colnames(input))])
-  datInOp <- data.frame(datInOp[, names(dplyr::select(datInOp, matches(c( as.character(Length_In)))))])
   #make two frames from each strand with the total reads starting at each position
   datIn$Total <- rowSums(datIn)
   datIn$pos <- row.names(datIn)
   lap <- datIn[, c( (ncol(datIn)), (ncol(datIn)-1) ), drop = F]
-  colnames(lap) <- paste0("Pos_", colnames(lap))
-  
-  datInOp$Total <- rowSums(datInOp)
-  datInOp$pos <- row.names(datInOp)
-  lapO <- datInOp[, c( (ncol(datInOp)), (ncol(datInOp)-1) ), drop = F]
-  colnames(lapO) <- paste0("Neg_", colnames(lapO))
+  row.names(lap) <- lap$pos
   
   #split the data into the opposing strands
   datO <- data.frame(input[, !grepl(paste0(Split), colnames(input))])
   datO <- data.frame(datO[,names(dplyr::select(datO, matches(c( as.character(Target_Length)))))])#only keep the targets
-  
-  datOOp <- data.frame(input[, !grepl(paste0(SplitO), colnames(input))])
-  datOOp <- data.frame(datOOp[,names(dplyr::select(datOOp, matches(c( as.character(Target_Length)))))])#only keep the targets
   
   #make two frames from each strand with the total reads starting at each position
   datO$Total <- rowSums(datO)
   datO$pos <- row.names(datO)
   datO <- datO[, c( (ncol(datO)), (ncol(datO)-1) ), drop = F]
   
-  datOOp$Total <- rowSums(datOOp)
-  datOOp$pos <- row.names(datOOp)
-  datOOp <- datOOp[, c( (ncol(datOOp)), (ncol(datOOp)-1) ), drop = F]
-  
-  #make the overlap matrix
   result <- c()
+  
   for (i in 1:nrow(lap)){
     
     max <- lap[i,2]
@@ -515,7 +506,6 @@ piCatcherDual <- function(x, Length_In , Target_Length , Overlap){
     #get the target    
     target <- datO[c( targ ) , "Total"]
     var <- c()
-
     #count the overlaps    
     
     for(l in 1:length(Overlap)){
@@ -533,273 +523,149 @@ piCatcherDual <- function(x, Length_In , Target_Length , Overlap){
     }
     #return the result    
     res <- t(data.frame(var))
-    colnames(res) <- paste0("Pos_By_", 1:length(Overlap))
+    colnames(res) <- paste0("By_", 1:length(Overlap))
     rownames(res) <- i
     
-ifelse( ( exists("result") ), result <- rbind( result, res ), result <- res) 
- 
-  }  
-  
-  #count the totals
-  
-  oLap <- c()
-  
-  #count the overlap totals from the corresponding column
-  for (o in 1:length(Overlap)){
-    
-    v <- sum(result[,o], na.rm = TRUE)
-    
-    oLap[paste0("by_",o)] <- as.numeric(v)
+    ifelse( ( exists("result") ), result <- rbind( result, res ), result <- res) 
     
   }
-  #arrange the data
-  oLaps <- as.data.frame(as.numeric(oLap))
-  oLaps$x <- as.numeric(row.names(oLaps))
-  oLaps <- oLaps[,c(2,1)]
-  colnames(oLaps) <- c("x", "Pos_count")
   
- #make overlap matrix for opposite strand 
-  resultO <- c()
-  for (i in 1:nrow(lapO)){
+  
+  Lap <- cbind(lap, result)
+  rm(result, Target_Length, Length_In, Overlap)
+  return(Lap)
+} 
+
+piCatcherNeg <- function(x,Length_In = parent.frame()$Length_In, 
+                         Target_Length = parent.frame()$Target_Length, 
+                         Overlap = parent.frame()$Overlap, 
+                         Split = "Neg"){
+  
+  input <- x
+  lap <-c()
+  #split the data into the opposing strands
+  datIn <- data.frame(input[, grepl(paste0(Split), colnames(input))])
+  datIn <- data.frame(datIn[, names(dplyr::select(datIn, matches(c( as.character(Length_In)))))])#makes sure we only keep the lengths we want
+  
+  #make two frames from each strand with the total reads starting at each position
+  datIn$Total <- rowSums(datIn)
+  datIn$pos <- row.names(datIn)
+  lap <- datIn[, c( (ncol(datIn)), (ncol(datIn)-1) ), drop = F]
+  row.names(lap) <- lap$pos
+  
+  #split the data into the opposing strands
+  datO <- data.frame(input[, !grepl(paste0(Split), colnames(input))])
+  datO <- data.frame(datO[,names(dplyr::select(datO, matches(c( as.character(Target_Length)))))])#only keep the targets
+  
+  #make two frames from each strand with the total reads starting at each position
+  datO$Total <- rowSums(datO)
+  datO$pos <- row.names(datO)
+  datO <- datO[, c( (ncol(datO)), (ncol(datO)-1) ), drop = F]
+  
+  result <- c()
+  
+  for (i in 1:nrow(lap)){
+    
+    max <- lap[i,2]
+    
+    #find the range of rows which are above 0 
+    range <- ( ( paste(i-length(Overlap)) ) : ( paste(i) ) )
+    ind <- which( ( paste(i-length(Overlap)) ) : ( paste(i) ) > 0)
+    #set the target indexes     
+    targ <- range[ind]
+    #get the target    
+    target <- datO[c( targ ) , "Total"]
+    var <- c()
+    #count the overlaps    
+    
+    for(l in 1:length(Overlap)){
       
-      max <- lapO[i,2]
+      var[l] <- target[(l)]
+      #this now limits the overlaps counted to the number of input sequences 
       
-      #find the range of rows which are above 0 
-      range <- ( ( paste(i-length(Overlap)) ) : ( paste(i) ) )
-      ind <- which( ( paste(i-length(Overlap)) ) : ( paste(i) ) > 0)
-      #set the target indexes     
-      targ <- range[ind]
-      #get the target    
-      target <- datOOp[c( targ ) , "Total"]
-      var <- c()
-      #count the overlaps    
-      
-      for(l in 1:length(Overlap)){
-        
-        var[l] <- target[(l)]
-        #this now limits the overlaps counted to the number of input sequences 
-        
-        if(is.na(var[l])){var[l] <- NA
+      if(is.na(var[l])){var[l] <- NA
+      }else{
+        if((var[l]) == 0 ){var[l] <- 0
         }else{
-          if((var[l]) == 0 ){var[l] <- 0
-          }else{
-            if(var[l] > max){var[l] <- max}
-          }
+          if(var[l] > max){var[l] <- max}
         }
       }
-      
-      #return the result    
-      resO <- t(data.frame(var))
-      colnames(resO) <- paste0("Neg_By_", 1:length(Overlap))
-      rownames(resO) <- i
+    }
+    #return the result    
+    res <- t(data.frame(var))
+    colnames(res) <- paste0("By_", 1:length(Overlap))
+    rownames(res) <- i
     
-    ifelse( ( exists("resultO") ), resultO <- rbind( resultO, resO ), resultO <- resO) 
+    ifelse( ( exists("result") ), result <- rbind( result, res ), result <- res) 
     
   }
   
-  oLapO <- c()
-  #count the overlap totals from the corresponding column
-  for (o in 1:length(Overlap)){
-    
-    v <- sum(resultO[,o], na.rm = TRUE)
-    
-    oLapO[paste0("by_",o)] <- as.numeric(v)
-    
-  }
-  #arrange the data
-  oLapsO <- as.data.frame(as.numeric(oLapO))
-  oLapsO$x <- as.numeric(row.names(oLapsO))
-  oLapsO <- oLapsO[,c(2,1)]
-  colnames(oLapsO) <- c("x", "Neg_count")
+  
+  Lap <- cbind(lap, result)
+  rm(result, Target_Length, Length_In, Overlap)
+  return(Lap)
+} 
+
+piCatcherDual <- function(x, Length_In , Target_Length , Overlap){
+  
+  input <- x
+  
+  datPos <- c()
+  datNeg <- c()
+  
+  datPos <- piCatcherPos(input)
+  datNeg <- piCatcherNeg(input)
+  oLaps <- overLaps(datPos, Overlap = parent.frame()$Overlap)
+  oLapsO <- overLaps(datNeg, Overlap = parent.frame()$Overlap)
   
   oLapsFinal <- cbind(oLaps,oLapsO)
   oLapsFinal <- oLapsFinal[,c(1,2,4)]
+  colnames(oLapsFinal) <- c("x", "Pos_count", "Neg_count")
   
   #get the Z-scores
-  Z_score_oLaps <-  oLapsFinal 
-
-  Z_score_oLaps$Pos_Z <- ((Z_score_oLaps$Pos_count - 
-               mean(Z_score_oLaps$Pos_count))/
-              sd(Z_score_oLaps$Pos_count))
- 
-   Z_score_oLaps$Neg_Z <- ((Z_score_oLaps$Neg_count - 
-                             mean(Z_score_oLaps$Neg_count))/
-                            sd(Z_score_oLaps$Neg_count))
   
-  Lap <- cbind(lap, result)
-  LapO <- cbind(lapO, resultO)
-
-  res <- c()
-  max <- ncol(Lap)
-  min <- max - length(Overlap)
-  range <- ((min+1):(max))
-  res <- Lap[,c(1,2)]
-  res$Lap_total <- rowSums(Lap[,c(3:length(Overlap))], na.rm=TRUE)
+  oLapsFinal$Pos_Z <- ((oLapsFinal$Pos_count - 
+                          mean(oLapsFinal$Pos_count))/
+                         sd(oLapsFinal$Pos_count))
   
-  for (i in 1:length(range)){
-    
-    pos <- range[i]
-    nam <- paste0("By_",Overlap[i])
-    res[[nam]] <- ifelse(res$Lap_total > 0,
-                         ifelse( is.na(Lap[,(pos)]/res$Lap_total),0, Lap[,(pos)]/res$Lap_total ),
-                         0
-    )
-  }
+  oLapsFinal$Neg_Z <- ((oLapsFinal$Neg_count - 
+                          mean(oLapsFinal$Neg_count))/
+                         sd(oLapsFinal$Neg_count))
   
-  resO <- c()
-  max <- ncol(LapO)
-  min <- max - length(Overlap)
-  range <- ((min+1):(max))
-  resO <- LapO[,c(1,2)]
-  resO$Lap_total <- rowSums(LapO[,c(3:length(Overlap))], na.rm=TRUE)
+  #get overlap probability for each position
+  piLapProbPos <- piProb(datPos, Overlap = parent.frame()$Overlap)
+  piLapProbNeg <- piProb(datNeg, Overlap = parent.frame()$Overlap)
+  #get weighted probability for each position
+  piLapProbWeightedPos <- piProbWeighted(datPos, Overlap = parent.frame()$Overlap)
+  piLapProbWeightedNeg <- piProbWeighted(datNeg, Overlap = parent.frame()$Overlap)
+  #calculate probability for the overlap length
+  piProbTotPos <- piProbSum(piLapProbPos, Overlap = parent.frame()$Overlap)
+  piProbTotNeg <- piProbSum(piLapProbNeg, Overlap = parent.frame()$Overlap)
   
-  for (i in 1:length(range)){
-    
-    pos <- range[i]
-    nam <- paste0("By_",Overlap[i])
-    resO[[nam]] <- ifelse(resO$Lap_total > 0,
-                         ifelse( is.na(LapO[,(pos)]/resO$Lap_total),0, LapO[,(pos)]/resO$Lap_total ),
-                         0
-    )
-  }
-  #get totals
-  #get input
-  laps <-  res
-  lap <- data.frame(laps[, grepl("By", colnames(Lap))])
-  oLap <- c()
-  #count the overlap totals from the corresponding column
-  for (o in 1:length(Overlap)){
-    
-    v <- sum(lap[,o], na.rm = TRUE)
-    
-    oLap[paste0("by_",o)] <- as.numeric(v)
-    
-  }
-  #arrange the data
-  oLaps <- as.data.frame(as.numeric(oLap))
-  oLaps$x <- as.numeric(row.names(oLaps))
-  oLaps <- oLaps[,c(2,1)]
-  colnames(oLaps) <- c("x", "Pos_Probability")
-  oLaps$Pos_Probability <- oLaps$Pos_Probability/sum(oLaps$Pos_Probability)
+  piLapProb <- cbind(piProbTotPos,piProbTotNeg)
+  piLapProb <- piLapProb[,c(2,4)]
+  colnames(piLapProb) <- c("Pos_probability", "Neg_probability")
+  #calculate weighted probability for the overlap length
+  piProbWeightedTotPos <- piProbSum(piLapProbWeightedPos, Overlap = parent.frame()$Overlap)
+  piProbWeightedTotNeg <- piProbSum(piLapProbWeightedNeg, Overlap = parent.frame()$Overlap)
   
-  #get input
-  laps <-  resO
-  lap <- data.frame(Lap[, grepl("By", colnames(Lap))])
-  oLap <- c()
-  #count the overlap totals from the corresponding column
-  for (o in 1:length(Overlap)){
-    
-    v <- sum(lap[,o], na.rm = TRUE)
-    
-    oLap[paste0("by_",o)] <- as.numeric(v)
-    
-  }
-  #arrange the data
-  oLapsO <- as.data.frame(as.numeric(oLap))
-  oLapsO$x <- as.numeric(row.names(oLapsO))
-  oLapsO <- oLapsO[,c(2,1)]
-  colnames(oLapsO) <- c("x", "Neg_Probability")
-  oLapsO$Neg_Probability <- oLapsO$Neg_Probability/sum(oLapsO$Neg_Probability)
+  piProbWeight <- cbind(piProbWeightedTotPos, piProbWeightedTotNeg)
+  piProbWeight <- piProbWeight[,c(2,4)]
+  colnames(piProbWeight) <- c("Pos_weighted_probability", "Neg_weighted_probability")
   
-  #return the data
-  ProbabFinal <- cbind(oLaps, oLapsO)
-  ProbabFinal <- ProbabFinal[,c(2,4)]
-  
-  #start amking final result table
-  ResFin <- cbind(Z_score_oLaps,ProbabFinal)
-  
-  #calculate the weighted probability
-  dat <- Lap
-  datO <- LapO
-  max <- ncol(dat)
-  min <- max - length(Overlap)
-  range <- ((min+1):(max))
-  res <- dat[,c(1,2)]
-  resO <- datO[,c(1,2)]
-  res$Pos_Lap_total <- rowSums(dat[,c(3:length(Overlap))], na.rm=TRUE)
-  resO$Neg_Lap_total <- rowSums(datO[,c(3:length(Overlap))], na.rm=TRUE)
-  
-  res$weighting <- res$Pos_Total/(sum(res$Pos_Total+sum(resO$Neg_Total)))
-  resO$weighting <- resO$Neg_Total/(sum(res$Pos_Total+sum(resO$Neg_Total)))
-  
-  for (i in 1:length(range)){
-    
-    pos <- range[i]
-    nam <- paste0("By_",Overlap[i])
-    res[[nam]] <- ifelse(res$Pos_Lap_total > 0,
-                         ifelse( is.na(dat[,(pos)]/res$Pos_Lap_total) ,0, (dat[,(pos)]/res$Pos_Lap_total)*res$weighting ),
-                         0
-    )
-  }
-  for (i in 1:length(range)){
-      
-    pos <- range[i]
-    nam <- paste0("By_",Overlap[i])
-    resO[[nam]] <- ifelse(resO$Neg_Lap_total > 0,
-                          ifelse( is.na(datO[,(pos)]/resO$Neg_Lap_total) ,0, (datO[,(pos)]/resO$Neg_Lap_total)*resO$weighting ),
-                           0
-      )
-  }
+  #get results
+  ResFin <- cbind(oLapsFinal, piLapProb,piProbWeight)
   
   #get totals
-  #get input
-  laps <-  res
-  lap <- data.frame(laps[, grepl("By", colnames(Lap))])
-  oLap <- c()
-  #count the overlap totals from the corresponding column
-  for (o in 1:length(Overlap)){
-    
-    v <- sum(lap[,o], na.rm = TRUE)
-    
-    oLap[paste0("by_",o)] <- as.numeric(v)
-    
-  }
-  
-  #arrange the data
-  oLaps <- as.data.frame(as.numeric(oLap))
-  oLaps$x <- as.numeric(row.names(oLaps))
-  oLaps <- oLaps[,c(2,1)]
-  colnames(oLaps) <- c("x", "Pos_Weighted_Probability")
-  oLaps$Pos_Weighted_Probability <- oLaps$Pos_Weighted_Probability/sum(oLaps$Pos_Weighted_Probability)
-  
-  #get input
-  laps <-  resO
-  lap <- data.frame(Lap[, grepl("By", colnames(Lap))])
-  oLap <- c()
-  #count the overlap totals from the corresponding column
-  for (o in 1:length(Overlap)){
-    
-    v <- sum(lap[,o], na.rm = TRUE)
-    
-    oLap[paste0("by_",o)] <- as.numeric(v)
-    
-  }
-  #arrange the data
-  oLapsO <- as.data.frame(as.numeric(oLap))
-  oLapsO$x <- as.numeric(row.names(oLapsO))
-  oLapsO <- oLapsO[,c(2,1)]
-  colnames(oLapsO) <- c("x", "Neg_Weighted_Probability")
-  oLapsO$Neg_Weighted_Probability <- oLapsO$Neg_Weighted_Probability/sum(oLapsO$Neg_Weighted_Probability)
-  #return the data
-  weightProbabFinal <- cbind(oLaps, oLapsO)
-  weightProbabFinal <- weightProbabFinal[,c(1,2,4)]
-  
-  #add to final results
-  ResFin <- cbind(ResFin,weightProbabFinal)
-  
-  #make summary data
-  ResFin$Overlap_Totals <- (ResFin$Pos_count + ResFin$Neg_count)
-  ResFin$Overlap_Totals_Z_Score <- ((ResFin$Overlap_Totals - 
-                                       mean(ResFin$Overlap_Totals))/
-                                      sd(ResFin$Overlap_Totals))
-  
-  ResFin$Probability <- ResFin$Pos_Probability + ResFin$Neg_Probability
-  ResFin$Probability <- ResFin$Probability/sum(ResFin$Probability)
-  
-  ResFin$Weighted_Probability <- ResFin$Pos_Weighted_Probability + ResFin$Neg_Weighted_Probability
-  ResFin$Weighted_Probability <- ResFin$Weighted_Probability/sum(ResFin$Weighted_Probability)
-  
+  ResFin$Overlaps <- ResFin$Pos_count + ResFin$Neg_count
+  ResFin$Z_Score <- ((ResFin$Overlaps - 
+                        mean(ResFin$Overlaps))/
+                       sd(ResFin$Overlaps))
+  ResFin$Probability <- (ResFin$Pos_probability+ResFin$Neg_probability)/sum(ResFin$Pos_probability,ResFin$Neg_probability)
+  ResFin$Weighted_Probability <- (ResFin$Pos_weighted_probability+ResFin$Neg_weighted_probability)/sum(ResFin$Pos_weighted_probability,ResFin$Neg_weighted_probability)
   
   return(ResFin)
   
 }
+
+
