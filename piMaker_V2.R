@@ -18,13 +18,13 @@ source("https://raw.githubusercontent.com/AK1RAJ/piMaker/main/piMaker_functions.
 #test Bam files are at https://github.com/AK1RAJ/piMaker/tree/main/BAM
 #test reference sequences are at: https://github.com/AK1RAJ/piMaker/tree/main/refSeq
 
-savefiles = T #T/F option on whether to save the output plots or not
+savefiles = F #T/F option on whether to save the output plots or not
 
 #set working directory and get the files####
 #make a project folder with three subfolders for 1- the BAM files (BAM), 2- the reference sequences (refSeq)
 #3- the output (Output)
 
-DIR <-                   #"C:/" put your directory here
+DIR <- "E:/TidyCode"                  #"C:/" put your directory here
 BAM <- paste0(DIR,"/BAM") #location of the BAM alignment files
 REF <- paste0(DIR,"/refSeq") #location of the reference sequences if you have them, if not do not run the first bit of code
 OUT <- paste0(DIR,"/Output") #this directory is only used if you set the savefiles to true
@@ -182,6 +182,7 @@ for (i in 1:(length(siRNA_Coverage_Plot))) {
   gg<- ggplot()+
     geom_line(data = cvr, aes(x= x, y = Pos ), colour = "black", linewidth = 0.5)+
     geom_line(data = cvr, aes(x= x, y = Neg), colour = "red", linewidth = 0.5)+
+    geom_hline(yintercept = 0, linetype = "solid", colour = "grey")+
     ggtitle(paste0(filename))+
     ylim(-(max(siCovCount)*1.1),(max(siCovCount)*1.1))+
     xlab ("nt position")+
@@ -212,6 +213,7 @@ for (i in 1:(length(siRNA_Coverage_Plot_Normalised))) {
   gg<- ggplot(data)+
     geom_line(aes(x= x, y = Pos_Normalised), colour = "black", linewidth = 0.5)+
     geom_line(aes(x= x, y = Neg_Normalised), colour = "red", linewidth = 0.5)+
+    geom_hline(yintercept = 0, linetype = "solid", colour = "grey")+
     ggtitle(paste0(namefile))+
     ylim(-1,1)+
     xlab ("nt position")+
@@ -261,6 +263,7 @@ for(i in 1:length(siRNA_Summary)){
     geom_line(aes(x = x, y = Pos_Mean, colour = "Meanpos"), linewidth = 1)+
     geom_ribbon(aes(x = x, ymin = Neg_E_min, ymax = Neg_E_max, colour = "SDneg"), alpha = 0.5, linewidth = NULL)+
     geom_line(aes(x = x, y = Neg_Mean, colour = "Meanneg"), linewidth = 1)+
+    geom_hline(yintercept = 0, linetype = "solid", colour = "grey")+
     scale_colour_manual("", 
                         breaks = c("SDpos", "Meanpos", "SDneg", "Meanneg"),
                         values = c("black", "black", "red", "red"))+
@@ -497,7 +500,7 @@ for (i in 1:(length(piSeqList))) {
       namB <- paste0(namfile,"_", rSeq,"_", namC, "_Tally")
       datS <- datr[[s]]
       if(names(datr[s]) == "-"){
-        datS$pos <- datS$pos + datS$qwidth#this makes sure the 5' of the negative strand is in the correct position
+        datS$pos <- (datS$pos + datS$qwidth)-1#this makes sure the 5' of the negative strand is in the correct position
       }
         for(t in 1:length(GenPosn)){
           targ <- as.numeric(GenPosn[t])#sets a target for a single nucleotide in the genome t=25
@@ -544,7 +547,7 @@ for (i in 1:(length(siSeqList))) {
       namB <- paste0(namfile,"_", rSeq,"_", namC, "_Tally")
       datS <- datr[[s]]
       if(names(datr[s]) == "-"){
-        datS$pos <- datS$pos + datS$qwidth#this makes sure the 5' of the negative strand is in the correct position
+        datS$pos <- (datS$pos + datS$qwidth)-1#this makes sure the 5' of the negative strand is in the correct position
       }
       for(t in 1:length(GenPosn)){
         targ <- as.numeric(GenPosn[t])#sets a target for a single nucleotide in the genome 
@@ -830,7 +833,7 @@ for (i in 1:length(samples)){
       fig <- ggarrange(gz +rremove("xlab") +rremove("x.text"),  gp +rremove("xlab") +rremove("x.text"), go  ,gpw, nrow = 2, ncol = 2 )
       annotate_figure(fig, top = text_grob(paste0(namd), 
                                             color = "darkslategrey", face = "bold", size = 14))
-      #plot(fig)
+      plot(fig)
       saveImage(paste0(namd))
     }
   }
@@ -894,50 +897,12 @@ for (i in 1:length(samples)){
       fig <- ggarrange(gz +rremove("xlab") +rremove("x.text"),  gp +rremove("xlab") +rremove("x.text"), go  ,gpw, nrow = 2, ncol = 2 )
       annotate_figure(fig, top = text_grob(paste0(namd), 
                                            color = "darkslategrey", face = "bold", size = 14))
+      plot(fig)
       saveImage(paste0(namd))
     }
   }
 }
-
-for(i in 1:length(piTally_List_Matrix)){
-  namp <- names(piTally_List_Matrix[i])
-  namp <- gsub("_Tally_Matrix","",namp)
-  datp <- piTally_List_Matrix[[i]]
-  for(s in 1:length(c(Split))){
-    spt <- Split[s]
-    namD <- paste0(namp, "_", spt, "_piRNA_Overlap")
-    #get the overlaps
-    piLap <- piCatcher(datp, Length_In = c(24:29), Target_Length = c(24:29), Overlap = c(1:21), Split = spt)
-    #get overlap probability for each position
-    piLapProb <- piProb(piLap, Overlap = c(1:21))
-    #get weighted probability for each position
-    piLapProbWeighted <- piProbWeighted(piLap, Overlap = c(1:21))
-    #calculate probability for the overlap length
-    piProbTot <- piProbSum(piLapProb, Overlap = c(1:21))
-    #calculate weighted probability for the overlap length
-    piProbWeightedTot <- piProbSum(piLapProbWeighted, Overlap = c(1:21))
-    #merge the probabilities
-    piProbability <- cbind(piProbTot$Probability, piProbWeightedTot$Probability)
-    colnames(piProbability) <- c("Probability", "Weighted_Probability")
-    #count the overlaps
-    overPiLap <- overLaps(piLap, Overlap = c(1:21))
-    ifelse( exists("piMax2"), piMax2 <- rbind( piMax2, max(overPiLap$count) ), piMax2 <- c(max(overPiLap$count)) )
-    #now calculate the z-score from the overlaps
-    piZscore <- Z_Score(overPiLap)
-    results <- cbind(piZscore, piProbability)
-    
-    if(exists("pi_Signature_List")){
-      pi_Signature_List[[namD]] <- results
-      rm(results)
-    }else{
-      pi_Signature_List <- list()
-      pi_Signature_List[[namD]] <- results
-      rm(results)
-    }
-  }
-  rm(piLap,piLapProb,piLapProbWeighted,piProbTot,piProbWeightedTot,piProbability,overPiLap,piZscore)
-}
-
+#and if we want to do the whole segment at once:
 for(i in 1:length(piTally_List_Matrix)){
   namp <- names(piTally_List_Matrix[i])
   namp <- gsub("_Tally_Matrix","",namp)
@@ -952,7 +917,72 @@ for(i in 1:length(piTally_List_Matrix)){
     rm(results)
   }
 }
-  
+#and plot 
+for (i in 1:length(samples)){
+  namfile <- samples[i]
+  for(r in 1:length(refSeq)){
+    Rnam <- refSeq[r]
+      dat <- pi_Signatures [[grep(paste0(namfile, "_", Rnam ), names(pi_Signatures))]]
+      namd <- paste0(namfile, "_", Rnam, "_pi")
+      
+      gz <- ggplot(data = dat, aes(x = x))+
+        geom_line(aes(y = Pos_Z, colour = "Pos"), linewidth = 1 )+
+        geom_line(aes(y = Neg_Z, colour = "Neg"), linewidth = 1 )+
+        geom_line(aes(y = Z_Score, colour = "Total"), linewidth = 2 )+
+        #ggtitle(paste0(namd))+
+        ylim(-5,5)+
+        ylab("Z-Score")+
+        xlab("Overlap (nt)")+
+        theme(legend.position="none")+
+        guides(colour = FALSE)+
+        #theme(aspect.ratio = 0.25:1)+
+        piMaker_theme+
+        scale_colour_discrete(labels=c('Pos', 'Neg', "Total"))+
+        guides(color = guide_legend(override.aes=list(colour = c("red","black","blue"))))
+      plot(gz)
+      
+      go <- ggplot(data = dat, aes(x = x, y = count))+
+        geom_col(aes(colour = "black"), linewidth = 1)+
+        #ggtitle(paste0(namd))+
+        ylim(0, (max(piMax2)+25))+
+        xlab("Overlap (nt)")+
+        ylab("No. of pairs")+
+        guides(colour = FALSE)+
+        piMaker_theme
+      #plot(go)
+      
+      gp <- ggplot(data = dat, aes(x = x, y = Probability))+
+        geom_line(colour = "blue", linewidth = 1 )+
+        #ggtitle(paste0(namd))+
+        #ylim(-1,1)+
+        ylab("Probability")+
+        xlab("Overlap (nt)")+
+        theme(legend.position="none")+
+        guides(colour = FALSE)+
+        #theme(aspect.ratio = 0.25:1)+
+        piMaker_theme
+      #plot(gp)
+      
+      gpw <- ggplot(data = dat, aes(x = x, y = Weighted_Probability))+
+        geom_line(colour = "blue", linewidth = 1 )+
+        #ggtitle(paste0(namd))+
+        #ylim(-1,1)+
+        ylab("Weighted probability")+
+        xlab("Overlap (nt)")+
+        theme(legend.position="none")+
+        guides(colour = FALSE)+
+        #theme(aspect.ratio = 0.25:1)+
+        piMaker_theme
+      #plot(gpw)
+      
+      fig <- ggarrange(gz +rremove("xlab") +rremove("x.text"),  gp +rremove("xlab") +rremove("x.text"), go  ,gpw, nrow = 2, ncol = 2 )
+      annotate_figure(fig, top = text_grob(paste0(namd), 
+                                           color = "darkslategrey", face = "bold", size = 14))
+      plot(fig)
+      saveImage(paste0(namd))
+    }
+  }
+}
 #FIN
 
     
@@ -978,7 +1008,7 @@ for (i in 1:(length(piList))) {
   }
   rm(data,datr,freq,piC)
 }    
-#this can take a while! rm(Count) s=1
+#this can take a while! rm(Count) i=1
 if(exists("piTally_List_Individual")){rm(piTally_List_Individual)}
 for (i in 1:(length(piList))) {
   namfile <- names(piList[i])
@@ -995,7 +1025,7 @@ for (i in 1:(length(piList))) {
       namB <- paste0(namfile,"_", rSeq,"_", namC, "_Tally")
       datS <- datr[[s]]
       if(names(datr[s]) == "-"){
-        datS$pos <- datS$pos + datS$qwidth#this makes sure the 5' of the negative strand is in the correct position
+        datS$pos <- (datS$pos + datS$qwidth)-1#this makes sure the 5' of the negative strand is in the correct position
       }
       for(t in 1:length(GenPosn)){
         targ <- as.numeric(GenPosn[t])#sets a target for a single nucleotide in the genome t=25
