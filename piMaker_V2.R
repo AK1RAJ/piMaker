@@ -18,7 +18,7 @@ source("https://raw.githubusercontent.com/AK1RAJ/piMaker/main/piMaker_functions.
 #test Bam files are at https://github.com/AK1RAJ/piMaker/tree/main/BAM
 #test reference sequences are at: https://github.com/AK1RAJ/piMaker/tree/main/refSeq
 
-savefiles = T #T/F option on whether to save the output plots or not
+savefiles = F #T/F option on whether to save the output plots or not
 
 #set working directory and get the files####
 #make a project folder with three subfolders for 1- the BAM files (BAM), 2- the reference sequences (refSeq)
@@ -917,6 +917,7 @@ for(i in 1:length(piTally_List_Matrix)){
     rm(results)
   }
 }
+<<<<<<< HEAD
 #make bar chart data
 for (i in 1:length(pi_Signatures)){
   namp <- names(pi_Signatures[i])
@@ -941,19 +942,28 @@ for (i in 1:length(pi_Signatures)){
   }
   rm(datp,dat1,dat2, barMaxCount)
 }
+=======
+>>>>>>> 7e46f74fd5423069f548efd1599d5226b747f51a
 #and plot 
 for (i in 1:length(samples)){
   namfile <- samples[i]
   for(r in 1:length(refSeq)){
     Rnam <- refSeq[r]
       dat <- pi_Signatures [[grep(paste0(namfile, "_", Rnam ), names(pi_Signatures))]]
+<<<<<<< HEAD
       datb <- pi_barplot [[grep(paste0(namfile, "_", Rnam ), names(pi_barplot))]]
+=======
+>>>>>>> 7e46f74fd5423069f548efd1599d5226b747f51a
       namd <- paste0(namfile, "_", Rnam, "_pi")
       
       gz <- ggplot(data = dat, aes(x = x))+
         geom_line(aes(y = Pos_Z, colour = "Pos"), linewidth = 1 )+
         geom_line(aes(y = Neg_Z, colour = "Neg"), linewidth = 1 )+
+<<<<<<< HEAD
         geom_line(aes(y = Z_Score, colour = "Overall"), linewidth = 2 )+
+=======
+        geom_line(aes(y = Z_Score, colour = "Total"), linewidth = 2 )+
+>>>>>>> 7e46f74fd5423069f548efd1599d5226b747f51a
         #ggtitle(paste0(namd))+
         ylim(-5,5)+
         ylab("Z-Score")+
@@ -962,6 +972,7 @@ for (i in 1:length(samples)){
         guides(colour = FALSE)+
         #theme(aspect.ratio = 0.25:1)+
         piMaker_theme+
+<<<<<<< HEAD
         scale_colour_manual( values = c("red","black","blue")) 
       #plot(gz)
       
@@ -981,6 +992,24 @@ for (i in 1:length(samples)){
         geom_line(aes(y = Pos_probability, colour = "Pos"), linewidth = 1 )+
         geom_line(aes(y = Neg_probability, colour = "Neg"), linewidth = 1 )+
         geom_line(aes(y = Probability, colour = "Overall"), linewidth = 2 )+
+=======
+        scale_colour_discrete(labels=c('Pos', 'Neg', "Total"))+
+        guides(color = guide_legend(override.aes=list(colour = c("red","black","blue"))))
+      plot(gz)
+      
+      go <- ggplot(data = dat, aes(x = x, y = count))+
+        geom_col(aes(colour = "black"), linewidth = 1)+
+        #ggtitle(paste0(namd))+
+        ylim(0, (max(piMax2)+25))+
+        xlab("Overlap (nt)")+
+        ylab("No. of pairs")+
+        guides(colour = FALSE)+
+        piMaker_theme
+      #plot(go)
+      
+      gp <- ggplot(data = dat, aes(x = x, y = Probability))+
+        geom_line(colour = "blue", linewidth = 1 )+
+>>>>>>> 7e46f74fd5423069f548efd1599d5226b747f51a
         #ggtitle(paste0(namd))+
         #ylim(-1,1)+
         ylab("Probability")+
@@ -988,6 +1017,7 @@ for (i in 1:length(samples)){
         theme(legend.position="none")+
         guides(colour = FALSE)+
         #theme(aspect.ratio = 0.25:1)+
+<<<<<<< HEAD
         piMaker_theme+
         scale_colour_manual( values = c("red","black","blue")) 
       #plot(gp)
@@ -996,6 +1026,13 @@ for (i in 1:length(samples)){
         geom_line(aes(y = Pos_weighted_probability, colour = "Pos"), linewidth = 1 )+
         geom_line(aes(y = Neg_weighted_probability, colour = "Neg"), linewidth = 1 )+
         geom_line(aes(y = Weighted_Probability, colour = "Overall"), linewidth = 2 )+
+=======
+        piMaker_theme
+      #plot(gp)
+      
+      gpw <- ggplot(data = dat, aes(x = x, y = Weighted_Probability))+
+        geom_line(colour = "blue", linewidth = 1 )+
+>>>>>>> 7e46f74fd5423069f548efd1599d5226b747f51a
         #ggtitle(paste0(namd))+
         #ylim(-1,1)+
         ylab("Weighted probability")+
@@ -1003,8 +1040,12 @@ for (i in 1:length(samples)){
         theme(legend.position="none")+
         guides(colour = FALSE)+
         #theme(aspect.ratio = 0.25:1)+
+<<<<<<< HEAD
         piMaker_theme+
         scale_colour_manual( values = c("red","black","blue")) 
+=======
+        piMaker_theme
+>>>>>>> 7e46f74fd5423069f548efd1599d5226b747f51a
       #plot(gpw)
       
       fig <- ggarrange(gz +rremove("xlab") +rremove("x.text"),  gp +rremove("xlab") +rremove("x.text"), go  ,gpw, nrow = 2, ncol = 2 )
