@@ -291,8 +291,8 @@ piCatcher <- function(x, Length_In , Target_Length , Overlap, Split){
 piFreq <- function(x){
   datr <- x
   datr <- datr
-  datrPos <- filter(datr, datr$strand == "+")
-  datrNeg <- filter(datr, datr$strand == "-")
+  datrPos <- dplyr::filter(datr, datr$strand == "+")
+  datrNeg <- dplyr::filter(datr, datr$strand == "-")
   datrNeg$FivPr <- datrNeg$pos + datrNeg$qwidth
   sumPos <- as.data.frame(xtabs(~pos, data = datrPos))
   row.names(sumPos) <- sumPos$pos
@@ -662,6 +662,7 @@ piCatcherDual <- function(x, Length_In , Target_Length , Overlap){
                         mean(ResFin$Overlaps))/
                        sd(ResFin$Overlaps))
   ResFin$Probability <- (ResFin$Pos_probability+ResFin$Neg_probability)/sum(ResFin$Pos_probability,ResFin$Neg_probability)
+
   ResFin$Weighted_Probability <- (ResFin$Pos_weighted_probability+ResFin$Neg_weighted_probability)/sum(ResFin$Pos_weighted_probability,ResFin$Neg_weighted_probability)
   
   return(ResFin)
