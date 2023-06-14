@@ -949,7 +949,6 @@ for (i in 1:length(pi_Signatures)){
 }
 #assign colours for the plots to differentiate positive reads, negative reads and combined:
 group.colors <- c(Pos = "red3", Neg = "blue2", Overall ="skyblue4")
-
 #and plot 
 for (i in 1:length(samples)){
   namfile <- samples[i]
@@ -963,6 +962,12 @@ for (i in 1:length(samples)){
         geom_line(aes(y = Pos_Z, colour = "Pos"), linewidth = 0.75 )+
         geom_line(aes(y = Neg_Z, colour = "Neg"), linewidth = 0.75 )+
         geom_line(aes(y = Z_Score, colour = "Overall"),  linewidth = 1 )+
+        namd <- paste0(namfile, "_", Rnam, "_pi")
+      
+      gz <- ggplot(data = dat, aes(x = x))+
+        geom_line(aes(y = Pos_Z, colour = "Pos"), linewidth = 1 )+
+        geom_line(aes(y = Neg_Z, colour = "Neg"), linewidth = 1 )+
+        geom_line(aes(y = Z_Score, colour = "Overall"), linewidth = 2 )+
         #ggtitle(paste0(namd))+
         ylim(-5,5)+
         ylab("Z-Score")+
@@ -991,6 +996,22 @@ for (i in 1:length(samples)){
         geom_line(aes(y = Pos_probability, colour = "Pos"), linewidth = 1 )+
         geom_line(aes(y = Neg_probability, colour = "Neg"), linewidth = 1 )+
         geom_line(aes(y = Probability, colour = "Overall"), linewidth = 2 )+
+        scale_colour_discrete(labels=c('Pos', 'Neg', "Total"))+
+        guides(color = guide_legend(override.aes=list(colour = c("red","black","blue"))))
+      plot(gz)
+      
+      go <- ggplot(data = dat, aes(x = x, y = count))+
+        geom_col(aes(colour = "black"), linewidth = 1)+
+        #ggtitle(paste0(namd))+
+        ylim(0, (max(piMax2)+25))+
+        xlab("Overlap (nt)")+
+        ylab("No. of pairs")+
+        guides(colour = FALSE)+
+        piMaker_theme
+      #plot(go)
+      
+      gp <- ggplot(data = dat, aes(x = x, y = Probability))+
+        geom_line(colour = "blue", linewidth = 1 )+
         #ggtitle(paste0(namd))+
         #ylim(-1,1)+
         ylab("Probability")+
@@ -1013,6 +1034,7 @@ for (i in 1:length(samples)){
         theme(legend.position="none")+
         guides(colour = FALSE)+
         #theme(aspect.ratio = 0.25:1)+
+
         piMaker_theme+
         scale_colour_manual( values = group.colors) 
       #plot(gpw)
