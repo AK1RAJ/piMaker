@@ -668,5 +668,29 @@ piCatcherDual <- function(x, Length_In , Target_Length , Overlap){
   return(ResFin)
   
 }
+data <- piSeqList[[i]]
+Count <- c(24:29)
 
+makeTally <- function(x, Genome_Length, Target_Length){
+  #define the parameters
+  data <- x
+  Count <- Target_Length
+  GenPosn <- Genome_Length
 
+    for(t in 1:length(GenPosn)){
+      targ <- as.numeric(GenPosn[t])#sets a target for a single nucleotide in the genome t=25
+      pat <- (dplyr::filter(datS, datS$pos == targ))#returns all reads at that target position
+      if(is.na(pat[1,1])){
+        pat[1,] <-  c(paste0(rSeq), paste0(spt), (paste0(GenPosn[t])),(0L),(0L))
+      }#sets a grid of 0 if there are no reads at the target position
+      pat <- pat[,3:4]#removes excess input
+      res <- countMatrix(pat, Count)#returns sum of the count of read length at the target
+      res <- data.frame(t(res))
+      row.names(res) <- targ
+      res$pos <- as.numeric(row.names(res))
+      res <- res[, c( ncol(res), (1:(ncol(res)-1))  )]
+      ifelse(exists("resultMakeTally"), resultMakeTally <- rbind(resultMakeTally, res), resultMakeTally <- res)
+    }
+  
+  return(resultMakeTally)
+}

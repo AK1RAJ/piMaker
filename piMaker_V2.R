@@ -18,7 +18,7 @@ source("https://raw.githubusercontent.com/AK1RAJ/piMaker/main/piMaker_functions.
 #test Bam files are at https://github.com/AK1RAJ/piMaker/tree/main/BAM
 #test reference sequences are at: https://github.com/AK1RAJ/piMaker/tree/main/refSeq
 
-savefiles = F #T/F option on whether to save the output plots or not
+savefiles = T #T/F option on whether to save the output plots or not
 
 #set working directory and get the files####
 #make a project folder with three subfolders for 1- the BAM files (BAM), 2- the reference sequences (refSeq)
@@ -502,27 +502,13 @@ for (i in 1:(length(piSeqList))) {
       if(names(datr[s]) == "-"){
         datS$pos <- (datS$pos + datS$qwidth)-1#this makes sure the 5' of the negative strand is in the correct position
       }
-        for(t in 1:length(GenPosn)){
-          targ <- as.numeric(GenPosn[t])#sets a target for a single nucleotide in the genome t=25
-          pat <- (dplyr::filter(datS, datS$pos == targ))#returns all reads at that target position
-          if(is.na(pat[1,1])){
-            pat[1,] <-  c(paste0(rSeq), paste0(spt), (paste0(GenPosn[t])),(0L),(0L))
-          }#sets a grid of 0 if there are no reads at the target position
-          pat <- pat[,3:4]#removes excess input
-          res <- countMatrix(pat, Count = c(24:29))#returns sum of the count of read length at the target
-          res <- data.frame(t(res))
-          row.names(res) <- targ
-          res$pos <- as.numeric(row.names(res))
-          res <- res[, c( ncol(res), (1:(ncol(res)-1))  )]
-          ifelse(exists("result"), result <- rbind(result, res), result <- res)
-        }
+      result <- makeTally(datS, GenPosn, c(24:29))
+      colnames(result) <- c("pos", c(24:29))
       if(exists("piTally_List")){
-        colnames(result) <- c("pos", c(24:29))
         piTally_List[[namB]] <- result
         rm(result,res)
       }else{
         piTally_List <- list()
-        colnames(result) <- c("pos", c(24:29))
         piTally_List[[namB]] <- result
         rm(result,res)
       }
@@ -549,27 +535,13 @@ for (i in 1:(length(siSeqList))) {
       if(names(datr[s]) == "-"){
         datS$pos <- (datS$pos + datS$qwidth)-1#this makes sure the 5' of the negative strand is in the correct position
       }
-      for(t in 1:length(GenPosn)){
-        targ <- as.numeric(GenPosn[t])#sets a target for a single nucleotide in the genome 
-        pat <- (dplyr::filter(datS, datS$pos == targ))#returns all reads at that target position
-        if(is.na(pat[1,1])){
-          pat[1,] <-  c(paste0(rSeq), paste0(spt), (paste0(GenPosn[t])),(0L),(0L))
-        }#sets a grid of 0 if there are no reads at the target position
-        pat <- pat[,3:4]#removes excess input
-        res <- countMatrix(pat, Count = c(21))#returns sum of the count of read length at the target
-        res <- data.frame(t(res))
-        row.names(res) <- targ
-        res$pos <- as.numeric(row.names(res))
-        res <- res[, c( ncol(res), (1:(ncol(res)-1))  )]
-        ifelse(exists("result"), result <- rbind(result, res), result <- res)
-      }
+      result <- makeTally(datS, GenPosn, c(21))
+      colnames(result) <- c("pos", c(21))
       if(exists("siTally_List")){
-        colnames(result) <- c("pos", c(21))
         siTally_List[[namB]] <- result
         rm(result,res)
       }else{
         siTally_List <- list()
-        colnames(result) <- c("pos", c(21))
         siTally_List[[namB]] <- result
         rm(result,res)
       }
@@ -1036,9 +1008,11 @@ for (i in 1:length(samples)){
 }
 #FIN
 
-    
+ 
+
+   
 #make piRNA position matrix for each sample 
-if(exists("piMatrixIndividual")){rm(piMatrixIndividual)}
+if(exists("piMatrixIndividual")){rm(piMatrixIndividual, piCountInd)}
 for (i in 1:(length(piList))) { 
   namfile <- names(piList[i])
   data <- piList[[i]]
@@ -1058,7 +1032,29 @@ for (i in 1:(length(piList))) {
     }    
   }
   rm(data,datr,freq,piC)
-}    
+}  
+#make siRNA position matrix for each sample 
+if(exists("siMatrixIndividual")){rm(siMatrixIndividual, siCountInd)}
+for (i in 1:(length(siList))) { 
+  namfile <- names(siList[i])
+  data <- siList[[i]]
+  for (r in 1:(length(refSeq))) {
+    rSeq <- refSeq[r]
+    nam <- paste0(namfile, "_", rSeq)
+    rsq <- makeRsq(rSeq)
+    datr <- dplyr::filter(data, data$rname == rSeq)
+    freq <- piFreq(datr)
+    piC <- maxCount(freq$Neg, freq$Pos)
+    ifelse(exists("siCountInd"), piCountInd <- rbind(piCountInd, piC), piCountInd <- piC)
+    if(exists("siMatrixIndividual")){
+      siMatrixIndividual[[nam]] <- freq
+    }else{
+      siMatrixIndividual <- list()
+      siMatrixIndividual[[nam]] <- freq
+    }    
+  }
+  rm(data,datr,freq,piC)
+}   
 #this can take a while! 
 if(exists("piTally_List_Individual")){rm(piTally_List_Individual)}
 for (i in 1:(length(piList))) {
@@ -1078,29 +1074,47 @@ for (i in 1:(length(piList))) {
       if(names(datr[s]) == "-"){
         datS$pos <- (datS$pos + datS$qwidth)-1#this makes sure the 5' of the negative strand is in the correct position
       }
-      for(t in 1:length(GenPosn)){
-        targ <- as.numeric(GenPosn[t])#sets a target for a single nucleotide in the genome t=25
-        pat <- (dplyr::filter(datS, datS$pos == targ))#returns all reads at that target position
-        if(is.na(pat[1,1])){
-          pat[1,] <-  c(paste0(rSeq), paste0(spt), (paste0(GenPosn[t])),(0L),(0L))
-        }#sets a grid of 0 if there are no reads at the target position
-        pat <- pat[,3:4]#removes excess input
-        res <- countMatrix(pat, Count = c(24:29))#returns sum of the count of read length at the target
-        res <- data.frame(t(res))
-        row.names(res) <- targ
-        res$pos <- as.numeric(row.names(res))
-        res <- res[, c( ncol(res), (1:(ncol(res)-1))  )]
-        ifelse(exists("result_Ind"), result_Ind <- rbind(result_Ind, res), result_Ind <- res)
-      }
+      result <- makeTally(datS, GenPosn, c(24:29))
+      colnames(result) <- c("pos", c(24:29))
       if(exists("piTally_List_Individual")){
-        colnames(result_Ind) <- c("pos", c(24:29))
-        piTally_List_Individual[[namB]] <- result_Ind
-        rm(result_Ind,res)
+        piTally_List_Individual[[namB]] <- result
+        rm(result)
       }else{
-        piTally_List_Individual <- list()
         colnames(result_Ind) <- c("pos", c(24:29))
-        piTally_List_Individual[[namB]] <- result_Ind
-        rm(result_Ind,res)
+        piTally_List_Individual[[namB]] <- result
+        rm(result)
+      }
+    }
+  }
+  rm(datS)
+}
+if(exists("siTally_List_Individual")){rm(siTally_List_Individual)}
+for (i in 1:(length(siList))) {
+  namfile <- names(siList[i])
+  data <- siList[[i]]
+  for (r in 1:(length(refSeq))) {
+    rSeq <- refSeq[r]
+    datr <- dplyr::filter(data, data$rname == rSeq)
+    datr <- split(datr, datr$strand)
+    datr <- datr[-3]
+    GenPosn <- c(1:makeRsq(rSeq))
+    for (s in 1:length(datr)) {
+      spt <- names(datr[s])
+      ifelse(names(datr[s]) == "+", namC <- "Pos", namC <- "Neg")
+      namB <- paste0(namfile,"_", rSeq,"_", namC, "_Tally")
+      datS <- datr[[s]]
+      if(names(datr[s]) == "-"){
+        datS$pos <- (datS$pos + datS$qwidth)-1#this makes sure the 5' of the negative strand is in the correct position
+      }
+      result <- makeTally(datS, GenPosn, c(21))
+      colnames(result) <- c("pos", c(21))
+      if(exists("siTally_List_Individual")){
+        siTally_List_Individual[[namB]] <- result
+        rm(result)
+      }else{
+        siTally_List_Individual <- list()
+        siTally_List_Individual[[namB]] <- result
+        rm(result)
       }
     }
   }
@@ -1124,7 +1138,7 @@ for (i in 1:length(samples)){
       colnames(datN) <- paste0("Neg_", colnames(datN))
       datC <- cbind(datN, datP)
       piTalMax <- maxCount( max(datC[,c(2:7)]), max(datC[,c(9:14)]))
-      ifelse(exists("piMaxInd"), v <- rbind(piMaxInd,piTalMax), piMaxInd <- piTalMax)
+      ifelse(exists("piMaxInd"), piMaxInd <- rbind(piMaxInd,piTalMax), piMaxInd <- piTalMax)
       
       if(exists("piTally_List_Matrix_Individual")){
         piTally_List_Matrix_Individual[[namRS]] <- datC
@@ -1136,24 +1150,75 @@ for (i in 1:length(samples)){
   }
   rm(smp,rSeq,namRP,namRN,namRS,datP,datN,datC,piTalMax)
 }
-#run piCatcherDual
+#join the positive and negative reads into a single matrix for the siRNAs i=1
+if(exists("siTally_List_Matrix_Individual")){rm(siTally_List_Matrix_Individual, siMaxInd)}
+for (i in 1:length(samples)){
+  smp <- samples[i]
+  namS <- paste0(smp)
+  for (n in 1:3){
+    num <- n
+    for (r in 1:length(refSeq)){
+      rSeq <- refSeq[r]
+      namRP <- paste0(smp, "_", n, "_siSequences_", rSeq,  "_Pos_Tally")
+      namRN <- paste0(smp, "_", n, "_siSequences_", rSeq, "_Neg_Tally")
+      namRS <- paste0(smp, "_", n, "_", rSeq, "_Tally_Matrix")
+      datP <- siTally_List_Individual[[(paste0(namRP))]]
+      colnames(datP) <- paste0("Pos_", colnames(datP))
+      datN <- siTally_List_Individual[[(paste0(namRN))]]
+      colnames(datN) <- paste0("Neg_", colnames(datN))
+      datC <- cbind(datN, datP)
+      siTalMax <- maxCount( max(datC[,c(2)]), max(datC[,c(4)]))
+      ifelse(exists("siMaxInd"), siMaxInd <- rbind(siMaxInd,siTalMax), siMaxInd <- siTalMax)
+      
+      if(exists("siTally_List_Matrix_Individual")){
+        siTally_List_Matrix_Individual[[namRS]] <- datC
+      } else{
+        siTally_List_Matrix_Individual <- list()
+        siTally_List_Matrix_Individual[[namRS]] <- datC
+      }
+    }
+  }
+  rm(smp,rSeq,namRP,namRN,namRS,datP,datN,datC,siTalMax)
+}
+#run piCatcherDual for the pi
 for(i in 1:length(piTally_List_Matrix_Individual)){
   namp <- names(piTally_List_Matrix_Individual[i])
   namp <- gsub("_Tally_Matrix","",namp)
   datp <- piTally_List_Matrix_Individual[[i]]
   results <- piCatcherDual(datp, Length_In = c(24:29), Target_Length = c(24:29), Overlap = c(1:21))
-  ifelse( exists("siProMaxI"), 
-          siProMaxI <- rbind( siProMaxI, max(results[,c(6,7)]) ),
-          siProMaxI <- c( max(results[,c(6,7)]) ) )
-  ifelse( exists("siProWeiMaxI"),
-          siProWeiMaxI <- rbind( siProWeiMaxI, max(results[,c(8,9)]) ),
-          siProWeiMaxI <- c( max(results[,c(8,9)]) )  )
+  ifelse( exists("piProMaxI"), 
+          piProMaxI <- rbind( piProMaxI, max(results[,c(6,7)]) ),
+          piProMaxI <- c( max(results[,c(6,7)]) ) )
+  ifelse( exists("piProWeiMaxI"),
+          piProWeiMaxI <- rbind( piProWeiMaxI, max(results[,c(8,9)]) ),
+          piProWeiMaxI <- c( max(results[,c(8,9)]) )  )
   if(exists("pi_Signatures_Individual")){
     pi_Signatures_Individual[[namp]] <- results
     rm(results)
   }else{
     pi_Signatures_Individual <- list()
     pi_Signatures_Individual[[namp]] <- results
+    rm(results)
+  }
+}
+#run piCatcherDual for the si
+for(i in 1:length(siTally_List_Matrix_Individual)){
+  namp <- names(siTally_List_Matrix_Individual[i])
+  namp <- gsub("_Tally_Matrix","",namp)
+  datp <- siTally_List_Matrix_Individual[[i]]
+  results <- piCatcherDual(datp, Length_In = c(21), Target_Length = c(21), Overlap = c(1:21))
+  ifelse( exists("siProMaxI"), 
+          siProMaxI <- rbind( siProMaxI, max(results[,c(6,7)]) ),
+          siProMaxI <- c( max(results[,c(6,7)]) ) )
+  ifelse( exists("siProWeiMaxI"),
+          siProWeiMaxI <- rbind( siProWeiMaxI, max(results[,c(8,9)]) ),
+          siProWeiMaxI <- c( max(results[,c(8,9)]) )  )
+  if(exists("si_Signatures_Individual")){
+    si_Signatures_Individual[[namp]] <- results
+    rm(results)
+  }else{
+    si_Signatures_Individual <- list()
+    si_Signatures_Individual[[namp]] <- results
     rm(results)
   }
 }
@@ -1182,7 +1247,30 @@ for (i in 1:length(pi_Signatures_Individual)){
   }
   rm(datp,dat1,dat2, barMaxCountInd)
 }
-#and plot 
+for (i in 1:length(si_Signatures_Individual)){
+  namp <- names(si_Signatures_Individual[i])
+  datp <- si_Signatures_Individual[[i]]
+  barMaxCountInd <- max(datp$Overlaps)
+  ifelse(exists("sarMaxInd"), sarMaxInd <- rbind(sarMaxInd, barMaxCountInd), sarMaxInd <- barMaxCountInd)
+  datp <- datp[,c(1:3)]
+  dat1 <- datp[,c(1,2)]
+  colnames(dat1) <- c("x", "Count")
+  dat1$Group <- "Pos"
+  dat2 <- datp[,c(1,3)]
+  colnames(dat2) <- c("x", "Count")
+  dat2$Group <- "Neg"
+  res <- bind_rows(dat1, dat2)
+  if(exists("si_barplot_Ind")){
+    si_barplot_Ind[[namp]] <- res
+    rm(res)
+  }else{
+    si_barplot_Ind <- list()
+    si_barplot_Ind[[namp]] <- res
+    rm(res)
+  }
+  rm(datp,dat1,dat2, barMaxCountInd)
+}
+#and plot for pi
 for (i in 1:length(BAMList)){
   namfile <- names(BAMList[i])
   for(r in 1:length(refSeq)){
@@ -1256,83 +1344,19 @@ for (i in 1:length(BAMList)){
     saveImage(paste0(namd))
   }
 }
-#making the summary and standard deviations
-if(exists("Final_Plot")){rm(Final_Plot)}
-for (i in 1:length(refSeq)){
-  ref <- refSeq[i]
-  dat <- (pi_Signatures_Individual[grepl(ref, names(pi_Signatures_Individual))])
-  nama <- paste0(ref)
-  res <- data.frame(c(1:21))
-  sz <- length(dat)
-  len <- ncol(dat[[1]])
-    for (l in 1:len){
-      nam <- colnames(dat[[1]][l])
-      for(s in 1:sz){
-        resa <- dat[[s]][l]
-        ifelse(exists("resb"), resb <- cbind(resb, resa), resb <- resa)
-        if(s == sz){
-          res[paste0(nam, "_Mean")] <- rowMeans(resb)
-          res[paste0(nam, "_SD")] <- apply(resb,1,sd)
-          res[paste0(nam, "_SD_Plus")] <-  res[paste0(nam, "_Mean")] + res[paste0(nam, "_SD")]
-          res[paste0(nam, "_SD_Minus")] <-  res[paste0(nam, "_Mean")] - res[paste0(nam, "_SD")]
-          rm(resb)
-        }
-      }
-    }
-  res <- res[,-1]
-  if(exists("pi_Final_Plot")){
-    pi_Final_Plot[[nama]] <- res
-    rm(res)
-  }else{
-    pi_Final_Plot <- list()
-    pi_Final_Plot[[nama]] <- res
-    rm(res)
-  }
-}
-#get the data for the individual plots
-for (i in 1:length(pi_Final_Plot)){
-  namp <- names(pi_Final_Plot[i])
-  datp <- pi_Final_Plot[[i]]
-  barMaxCount <- max(datp$Overlaps_Mean)
-  ifelse(exists("barMaxFin"), barMaxFin <- rbind(barMaxFin, barMaxCount), barMaxFin <- barMaxCount)
-  dat1 <- datp[,c(1,5,7,8)]
-  dat2 <- datp[,c(1,9,11,12)]
-  colnames(dat1) <- c("x", "Count", "Error_Min", "Error_Max")
-  dat1$Group <- "Pos"
-  colnames(dat2) <- c("x", "Count", "Error_Min", "Error_Max")
-  dat2$Group <- "Neg"
-  res <- bind_rows(dat1, dat2)
-  if(exists("pi_barplot_Fin")){
-    pi_barplot_Fin[[namp]] <- res
-    rm(res)
-  }else{
-    pi_barplot_Fin <- list()
-    pi_barplot_Fin[[namp]] <- res
-    rm(res)
-  }
-  rm(datp,dat1,dat2, barMaxCount)
-}
-#plot the final data
-for(r in 1:length(refSeq)){
+#and plot for si
+for (i in 1:length(BAMList)){
+  namfile <- names(BAMList[i])
+  for(r in 1:length(refSeq)){
     Rnam <- refSeq[r]
-    dat <- Final_Plot [[grep(paste0(Rnam ), names(Final_Plot))]]
-    datb <- pi_barplot_Fin [[grep(paste0(Rnam ), names(Final_Plot))]]
+    dat <- si_Signatures_Individual [[grep(paste0(namfile, "_", Rnam ), names(pi_Signatures_Individual))]]
+    datb <- si_barplot_Ind [[grep(paste0(namfile, "_", Rnam ), names(pi_barplot_Ind))]]
     namd <- paste0(namfile, "_", Rnam, "_pi")
     
-    gz <- ggplot(data = dat, aes(x = x_Mean))+
-      geom_line(aes(y = Pos_Z_Mean, colour = "Pos" ), linewidth = 0.75 )+
-      geom_ribbon(aes(x = x_Mean, ymin = Pos_Z_SD_Minus, 
-                      ymax = Pos_Z_SD_Plus, colour = "Pos" ), 
-                  fill = group.colors["Pos"], 
-                  alpha = 0.25, linewidth = 0)+
-      geom_line(aes(y = Neg_Z_Mean, colour = "Neg"), linewidth = 0.75 )+
-      geom_ribbon(aes(x = x_Mean, ymin = Neg_Z_SD_Minus, 
-                      ymax = Neg_Z_SD_Plus, colour = "Neg" ), 
-                  fill = group.colors["Neg"], 
-                  alpha = 0.25, linewidth = 0)+
-      geom_line(aes(y = Z_Score_Mean, colour = "Overall"),  linewidth = 1 )+
-      geom_line(aes(y = Z_Score_SD_Plus, colour = "Overall"),  linewidth = 1 )+
-      geom_line(aes(y = Z_Score_SD_Minus, colour = "Overall"),  linewidth = 1 )+
+    gz <- ggplot(data = dat, aes(x = x))+
+      geom_line(aes(y = Pos_Z, colour = "Pos"), linewidth = 0.75 )+
+      geom_line(aes(y = Neg_Z, colour = "Neg"), linewidth = 0.75 )+
+      geom_line(aes(y = Z_Score, colour = "Overall"),  linewidth = 1 )+
       #ggtitle(paste0(namd))+
       ylim(-5,5)+
       ylab("Z-Score")+
@@ -1340,15 +1364,14 @@ for(r in 1:length(refSeq)){
       theme(legend.position="none")+
       guides(colour = "none")+
       scale_colour_manual(values=group.colors)+
-      scale_fill_manual(values=group.colors)+
       #theme(aspect.ratio = 0.25:1)+
       piMaker_theme
-    plot(gz)
+    #plot(gz)
     
     go <- ggplot(data = datb, aes(x = x))+
       geom_bar(stat = "identity", aes(y = Count, fill = Group, alpha = 0.5), colour = "darkslategrey",  linewidth = 0.75)+
       #ggtitle(paste0(namd))+
-      ylim(0, (max(barMaxInd)+25))+
+      ylim(0, (max(sarMaxInd)+25))+
       xlab("Overlap (nt)")+
       ylab("No. of pairs")+
       guides(colour = FALSE)+
@@ -1395,4 +1418,355 @@ for(r in 1:length(refSeq)){
     saveImage(paste0(namd))
   }
 }
+#making the summary and standard deviations for the pi
+if(exists("pi_Final_Plot")){rm(pi_Final_Plot, piProMaxF, piProWeiMaxF)}
+for (i in 1:length(refSeq)){
+  ref <- refSeq[i]
+  dat <- (pi_Signatures_Individual[grepl(ref, names(pi_Signatures_Individual))])
+  nama <- paste0(ref)
+  res <- data.frame(c(1:21))
+  sz <- length(dat)
+  len <- ncol(dat[[1]])
+    for (l in 1:len){
+      nam <- colnames(dat[[1]][l])
+      for(s in 1:sz){
+        resa <- dat[[s]][l]
+        ifelse(exists("resb"), resb <- cbind(resb, resa), resb <- resa)
+        if(s == sz){
+          res[paste0(nam, "_Mean")] <- rowMeans(resb)
+          res[paste0(nam, "_SD")] <- apply(resb,1,sd)
+          res[paste0(nam, "_SD_Plus")] <-  res[paste0(nam, "_Mean")] + res[paste0(nam, "_SD")]
+          res[paste0(nam, "_SD_Minus")] <-  res[paste0(nam, "_Mean")] - res[paste0(nam, "_SD")]
+          rm(resb)
+        }
+      }
+    }
+  res <- res[,-c(1,3,4,5)]
+  ifelse( exists("piProMaxF"), 
+          piProMaxF <- rbind( piProMaxF, max(res[,c(18,22)]) ),
+          piProMaxF <- c( max(res[,c(18,22)]) ) )
+  ifelse( exists("piProWeiMaxF"),
+          piProWeiMaxF <- rbind( piProWeiMaxF, max(res[,c(26,30)]) ),
+          piProWeiMaxF <- c( max(res[,c(26,30)]) )  )
+  if(exists("pi_Final_Plot")){
+    pi_Final_Plot[[nama]] <- res
+    rm(res)
+  }else{
+    pi_Final_Plot <- list()
+    pi_Final_Plot[[nama]] <- res
+    rm(res)
+  }
+}
+#making the summary and standard deviations for the si
+if(exists("si_Final_Plot")){rm(si_Final_Plot, siProMaxF, siProWeiMaxF)}
+for (i in 1:length(refSeq)){
+  ref <- refSeq[i]
+  dat <- (si_Signatures_Individual[grepl(ref, names(si_Signatures_Individual))])
+  nama <- paste0(ref)
+  res <- data.frame(c(1:21))
+  sz <- length(dat)
+  len <- ncol(dat[[1]])
+  for (l in 1:len){
+    nam <- colnames(dat[[1]][l])
+    for(s in 1:sz){
+      resa <- dat[[s]][l]
+      ifelse(exists("resb"), resb <- cbind(resb, resa), resb <- resa)
+      if(s == sz){
+        res[paste0(nam, "_Mean")] <- rowMeans(resb)
+        res[paste0(nam, "_SD")] <- apply(resb,1,sd)
+        res[paste0(nam, "_SD_Plus")] <-  res[paste0(nam, "_Mean")] + res[paste0(nam, "_SD")]
+        res[paste0(nam, "_SD_Minus")] <-  res[paste0(nam, "_Mean")] - res[paste0(nam, "_SD")]
+        rm(resb)
+      }
+    }
+  }
+  res <- res[,-c(1,3,4,5)]
+  ifelse( exists("siProMaxF"), 
+          siProMaxF <- rbind( siProMaxF, max(res[,c(18,22)]) ),
+          siProMaxF <- c( max(res[,c(18,22)]) ) )
+  ifelse( exists("siProWeiMaxF"),
+          siProWeiMaxF <- rbind( siProWeiMaxF, max(res[,c(26,30)]) ),
+          siProWeiMaxF <- c( max(res[,c(26,30)]) )  )
+  if(exists("si_Final_Plot")){
+    si_Final_Plot[[nama]] <- res
+    rm(res)
+  }else{
+    si_Final_Plot <- list()
+    si_Final_Plot[[nama]] <- res
+    rm(res)
+  }
+}
+#get the data for the final bar plots, error bars must be done separate unfortunately of ggplot does not like it
+if(exists("pi_barplot_Fin")){rm(pi_barplot_Fin, barMaxFin)}
+for (i in 1:length(pi_Final_Plot)){
+  namp <- names(pi_Final_Plot[i])
+  datp <- pi_Final_Plot[[i]]
+  barMaxCount <- max(datp$Overlaps_Mean)
+  ifelse(exists("barMaxFin"), barMaxFin <- rbind(barMaxFin, barMaxCount), barMaxFin <- barMaxCount)
+  dat1 <- datp[,c(1,2,3)]
+  dat1$Cumulative <- dat1$Pos_count_Mean
+  dat2 <- datp[,c(1,6,7)]
+  dat2$Cumulative <- dat1$Pos_count_Mean + dat2$Neg_count_Mean
+  colnames(dat1) <- c("x", "Count", "SD", "Cumulative")
+  dat1$Group <- "Pos"
+  colnames(dat2) <- c("x", "Count", "SD", "Cumulative")
+  dat2$Group <- "Neg"
+  res <- bind_rows(dat1, dat2)
+  if(exists("pi_barplot_Fin")){
+    pi_barplot_Fin[[namp]] <- res
+    rm(res)
+  }else{
+    pi_barplot_Fin <- list()
+    pi_barplot_Fin[[namp]] <- res
+    rm(res)
+  }
+  rm(datp,dat1,dat2, barMaxCount)
+}
+#and for the siRNA
+if(exists("si_barplot_Fin")){rm(si_barplot_Fin, sarMaxFin)}
+for (i in 1:length(si_Final_Plot)){
+  namp <- names(si_Final_Plot[i])
+  datp <- si_Final_Plot[[i]]
+  sarMaxCount <- max(datp$Overlaps_Mean) + max(datp$Overlaps_SD)
+  ifelse(exists("sarMaxFin"), sarMaxFin <- rbind(sarMaxFin, sarMaxCount), sarMaxFin <- sarMaxCount)
+  dat1 <- datp[,c(1,2,3)]
+  dat1$Cumulative <- dat1$Pos_count_Mean
+  dat2 <- datp[,c(1,6,7)]
+  dat2$Cumulative <- dat1$Pos_count_Mean + dat2$Neg_count_Mean
+  colnames(dat1) <- c("x", "Count", "SD", "Cumulative")
+  dat1$Group <- "Pos"
+  colnames(dat2) <- c("x", "Count", "SD", "Cumulative")
+  dat2$Group <- "Neg"
+  res <- bind_rows(dat1, dat2)
+  if(exists("si_barplot_Fin")){
+    si_barplot_Fin[[namp]] <- res
+    rm(res)
+  }else{
+    si_barplot_Fin <- list()
+    si_barplot_Fin[[namp]] <- res
+    rm(res)
+  }
+  rm(datp,dat1,dat2, sarMaxCount)
+}
+#plot the final pi data
+for(r in 1:length(refSeq)){
+    Rnam <- refSeq[r]
+    dat <- pi_Final_Plot [[grep(paste0(Rnam ), names(pi_Final_Plot))]]
+    datb <- pi_barplot_Fin [[grep(paste0(Rnam ), names(pi_barplot_Fin))]]
+    namd <- paste0(namfile, "_", Rnam, "_pi")
+    
+    gz <- ggplot(data = dat, aes(x = x_Mean))+
+      geom_line(aes(y = Pos_Z_Mean, colour = "Pos" ), linewidth = 0.75 )+
+      geom_ribbon(aes(x = x_Mean, ymin = Pos_Z_SD_Minus, 
+                      ymax = Pos_Z_SD_Plus, colour = "Pos" ), 
+                  fill = group.colors["Pos"], 
+                  alpha = 0.25, linewidth = 0)+
+      geom_line(aes(y = Neg_Z_Mean, colour = "Neg"), linewidth = 0.75 )+
+      geom_ribbon(aes(x = x_Mean, ymin = Neg_Z_SD_Minus, 
+                      ymax = Neg_Z_SD_Plus, colour = "Neg" ), 
+                  fill = group.colors["Neg"], 
+                  alpha = 0.25, linewidth = 0)+
+      geom_line(aes(y = Z_Score_Mean, colour = "Overall"),  linewidth = 1 )+
+      geom_ribbon(aes(x = x_Mean, ymin = Z_Score_SD_Minus, 
+                      ymax = Z_Score_SD_Plus, colour = "Overall" ), 
+                  fill = group.colors["Overall"], 
+                  alpha = 0.25, linewidth = 0)+
+      #ggtitle(paste0(namd))+
+      ylim(-5,5)+
+      ylab("Z-Score")+
+      xlab("Overlap (nt)")+
+      theme(legend.position="none")+
+      guides(colour = "none")+
+      scale_colour_manual(values=group.colors)+
+      scale_fill_manual(values=group.colors)+
+      #theme(aspect.ratio = 0.25:1)+
+      piMaker_theme
+    #plot(gz)
+    
+    go <- ggplot(data = datb, aes(x = x))+
+      geom_bar(stat = "identity", aes(y = Count, fill = Group, alpha = 0.5), colour = "darkslategrey",  linewidth = 0.75)+
+      geom_errorbar( aes(ymin = Cumulative - SD, ymax = Cumulative + SD), position = "identity", linewidth=0.5, colour="black", alpha=0.7 )+
+      #geom_errorbar( aes(x = data$x, ymin = data$Neg_E_Min, ymax = data$Neg_E_Max), linewidth=1, colour="black", alpha=0.9 )+
+      #ggtitle(paste0(namd))+
+      ylim(0, (max(barMaxFin)*1.1))+
+      xlab("Overlap (nt)")+
+      ylab("No. of pairs")+
+      guides(colour = FALSE)+
+      piMaker_theme+
+      theme(legend.position="none")+
+      #scale_colour_manual(values=group.colors)
+      scale_fill_manual(values = group.colors)
+    #plot(go)
+    
+    gp <- ggplot(data = dat, aes(x = x_Mean))+
+      geom_line(aes(y = Pos_probability_Mean, colour = "Pos"), linewidth = 0.75 )+
+      geom_ribbon(aes(x = x_Mean, ymin = Pos_probability_SD_Minus, 
+                      ymax = Pos_probability_SD_Plus, colour = "Pos" ), 
+                  fill = group.colors["Pos"], 
+                  alpha = 0.25, linewidth = 0)+
+      geom_line(aes(y = Neg_probability_Mean, colour = "Neg"), linewidth = 0.75 )+
+      geom_ribbon(aes(x = x_Mean, ymin = Neg_probability_SD_Minus, 
+                      ymax = Neg_probability_SD_Plus, colour = "Neg" ), 
+                  fill = group.colors["Neg"], 
+                  alpha = 0.25, linewidth = 0)+
+      geom_line(aes(y = Probability_Mean, colour = "Overall"), linewidth = 1 )+
+      geom_ribbon(aes(x = x_Mean, ymin = Probability_SD_Minus, 
+                      ymax = Probability_SD_Plus, colour = "Overall" ), 
+                  fill = group.colors["Overall"], 
+                  alpha = 0.25, linewidth = 0)+
+      #ggtitle(paste0(namd))+
+      ylim(0, (max(piProMaxF)*1.1))+
+      ylab("Probability")+
+      xlab("Overlap (nt)")+
+      theme(legend.position="none")+
+      guides(colour = FALSE)+
+      #theme(aspect.ratio = 0.25:1)+
+      piMaker_theme+
+      scale_colour_manual( values = group.colors) 
+    #plot(gp)
+    
+    gpw <- ggplot(data = dat, aes(x = x_Mean))+
+      geom_line(aes(y = Pos_weighted_probability_Mean, colour = "Pos"), linewidth = 0.75 )+
+      geom_ribbon(aes(x = x_Mean, ymin = Pos_weighted_probability_SD_Minus, 
+                      ymax = Pos_weighted_probability_SD_Plus, colour = "Pos" ), 
+                  fill = group.colors["Pos"], 
+                  alpha = 0.25, linewidth = 0)+
+      geom_line(aes(y = Neg_weighted_probability_Mean, colour = "Neg"), linewidth = 0.75 )+
+      geom_ribbon(aes(x = x_Mean, ymin = Neg_weighted_probability_SD_Minus, 
+                      ymax = Neg_weighted_probability_SD_Plus, colour = "Pos" ), 
+                  fill = group.colors["Neg"], 
+                  alpha = 0.25, linewidth = 0)+
+      geom_line(aes(y = Weighted_Probability_Mean, colour = "Overall"), linewidth = 1 )+
+      geom_ribbon(aes(x = x_Mean, ymin = Weighted_Probability_SD_Minus, 
+                      ymax = Weighted_Probability_SD_Plus, colour = "Overall" ), 
+                  fill = group.colors["Overall"], 
+                  alpha = 0.25, linewidth = 0)+
+      #ggtitle(paste0(namd))+
+      ylim(0, (max(piProWeiMaxF)*1.1))+
+      ylab("Weighted probability")+
+      xlab("Overlap (nt)")+
+      theme(legend.position="none")+
+      guides(colour = FALSE)+
+      #theme(aspect.ratio = 0.25:1)+
+      piMaker_theme+
+      scale_colour_manual( values = group.colors) 
+    #plot(gpw)
+    
+    fig <- ggarrange(gz +rremove("xlab") +rremove("x.text"),  gp +rremove("xlab") +rremove("x.text"), go  ,gpw, nrow = 2, ncol = 2 )
+    annotate_figure(fig, top = text_grob(paste0(namd), 
+                                         color = "darkslategrey", face = "bold", size = 14))
+    plot(fig)
+    saveImage(paste0(namd))
+}
+#plot the final si data
+for(r in 1:length(refSeq)){
+  Rnam <- refSeq[r]
+  dat <- si_Final_Plot [[grep(paste0(Rnam ), names(si_Final_Plot))]]
+  datb <- si_barplot_Fin [[grep(paste0(Rnam ), names(si_barplot_Fin))]]
+  namd <- paste0(namfile, "_", Rnam, "_si")
+  
+  gz <- ggplot(data = dat, aes(x = x_Mean))+
+    geom_line(aes(y = Pos_Z_Mean, colour = "Pos" ), linewidth = 0.75 )+
+    geom_ribbon(aes(x = x_Mean, ymin = Pos_Z_SD_Minus, 
+                    ymax = Pos_Z_SD_Plus, colour = "Pos" ), 
+                fill = group.colors["Pos"], 
+                alpha = 0.25, linewidth = 0)+
+    geom_line(aes(y = Neg_Z_Mean, colour = "Neg"), linewidth = 0.75 )+
+    geom_ribbon(aes(x = x_Mean, ymin = Neg_Z_SD_Minus, 
+                    ymax = Neg_Z_SD_Plus, colour = "Neg" ), 
+                fill = group.colors["Neg"], 
+                alpha = 0.25, linewidth = 0)+
+    geom_line(aes(y = Z_Score_Mean, colour = "Overall"),  linewidth = 1 )+
+    geom_ribbon(aes(x = x_Mean, ymin = Z_Score_SD_Minus, 
+                    ymax = Z_Score_SD_Plus, colour = "Overall" ), 
+                fill = group.colors["Overall"], 
+                alpha = 0.25, linewidth = 0)+
+    #ggtitle(paste0(namd))+
+    ylim(-5,5)+
+    ylab("Z-Score")+
+    xlab("Overlap (nt)")+
+    theme(legend.position="none")+
+    guides(colour = "none")+
+    scale_colour_manual(values=group.colors)+
+    scale_fill_manual(values=group.colors)+
+    #theme(aspect.ratio = 0.25:1)+
+    piMaker_theme
+  #plot(gz)
+  
+  go <- ggplot(data = datb, aes(x = x))+
+    geom_bar(stat = "identity", aes(y = Count, fill = Group, alpha = 0.5), colour = "darkslategrey",  linewidth = 0.75)+
+    geom_errorbar( aes(ymin = Cumulative - SD, ymax = Cumulative + SD), position = "identity", linewidth=0.5, colour="black", alpha=0.7 )+
+    #geom_errorbar( aes(x = data$x, ymin = data$Neg_E_Min, ymax = data$Neg_E_Max), linewidth=1, colour="black", alpha=0.9 )+
+    #ggtitle(paste0(namd))+
+    ylim(0, (max(sarMaxFin)*1.1))+
+    xlab("Overlap (nt)")+
+    ylab("No. of pairs")+
+    guides(colour = FALSE)+
+    piMaker_theme+
+    theme(legend.position="none")+
+    #scale_colour_manual(values=group.colors)
+    scale_fill_manual(values = group.colors)
+  #plot(go)
+  
+  gp <- ggplot(data = dat, aes(x = x_Mean))+
+    geom_line(aes(y = Pos_probability_Mean, colour = "Pos"), linewidth = 0.75 )+
+    geom_ribbon(aes(x = x_Mean, ymin = Pos_probability_SD_Minus, 
+                    ymax = Pos_probability_SD_Plus, colour = "Pos" ), 
+                fill = group.colors["Pos"], 
+                alpha = 0.25, linewidth = 0)+
+    geom_line(aes(y = Neg_probability_Mean, colour = "Neg"), linewidth = 0.75 )+
+    geom_ribbon(aes(x = x_Mean, ymin = Neg_probability_SD_Minus, 
+                    ymax = Neg_probability_SD_Plus, colour = "Neg" ), 
+                fill = group.colors["Neg"], 
+                alpha = 0.25, linewidth = 0)+
+    geom_line(aes(y = Probability_Mean, colour = "Overall"), linewidth = 1 )+
+    geom_ribbon(aes(x = x_Mean, ymin = Probability_SD_Minus, 
+                    ymax = Probability_SD_Plus, colour = "Overall" ), 
+                fill = group.colors["Overall"], 
+                alpha = 0.25, linewidth = 0)+
+    #ggtitle(paste0(namd))+
+    ylim(0, (max(siProMaxF)*1.1))+
+    ylab("Probability")+
+    xlab("Overlap (nt)")+
+    theme(legend.position="none")+
+    guides(colour = FALSE)+
+    #theme(aspect.ratio = 0.25:1)+
+    piMaker_theme+
+    scale_colour_manual( values = group.colors) 
+ #plot(gp)
+  
+  gpw <- ggplot(data = dat, aes(x = x_Mean))+
+    geom_line(aes(y = Pos_weighted_probability_Mean, colour = "Pos"), linewidth = 0.75 )+
+    geom_ribbon(aes(x = x_Mean, ymin = Pos_weighted_probability_SD_Minus, 
+                    ymax = Pos_weighted_probability_SD_Plus, colour = "Pos" ), 
+                fill = group.colors["Pos"], 
+                alpha = 0.25, linewidth = 0)+
+    geom_line(aes(y = Neg_weighted_probability_Mean, colour = "Neg"), linewidth = 0.75 )+
+    geom_ribbon(aes(x = x_Mean, ymin = Neg_weighted_probability_SD_Minus, 
+                    ymax = Neg_weighted_probability_SD_Plus, colour = "Pos" ), 
+                fill = group.colors["Neg"], 
+                alpha = 0.25, linewidth = 0)+
+    geom_line(aes(y = Weighted_Probability_Mean, colour = "Overall"), linewidth = 1 )+
+    geom_ribbon(aes(x = x_Mean, ymin = Weighted_Probability_SD_Minus, 
+                    ymax = Weighted_Probability_SD_Plus, colour = "Overall" ), 
+                fill = group.colors["Overall"], 
+                alpha = 0.25, linewidth = 0)+
+    #ggtitle(paste0(namd))+
+    ylim(0, (max(siProWeiMaxF)*1.1))+
+    ylab("Weighted probability")+
+    xlab("Overlap (nt)")+
+    theme(legend.position="none")+
+    guides(colour = FALSE)+
+    #theme(aspect.ratio = 0.25:1)+
+    piMaker_theme+
+    scale_colour_manual( values = group.colors) 
+  #plot(gpw)
+  
+  fig <- ggarrange(gz +rremove("xlab") +rremove("x.text"),  gp +rremove("xlab") +rremove("x.text"), go  ,gpw, nrow = 2, ncol = 2 )
+  annotate_figure(fig, top = text_grob(paste0(namd), 
+                                       color = "darkslategrey", face = "bold", size = 14))
+  plot(fig)
+  saveImage(paste0(namd))
+}
+
 
