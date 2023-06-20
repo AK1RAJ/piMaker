@@ -13,7 +13,7 @@ if (any(installed_packages == FALSE)) {
 invisible(lapply(packages, library, character.only = TRUE))
 # Rsamtools might require forced installation on newer versions of R : BiocManager::install("Rsamtools", force = T)
 #load the functions from here
-source("https://raw.githubusercontent.com/AK1RAJ/piMaker/main/piMaker_functions.R")
+source("https://raw.githubusercontent.com/AK1RAJ/piMaker/main/piMaker_functions_V2.R")
 
 #test Bam files are at https://github.com/AK1RAJ/piMaker/tree/main/BAM
 #test reference sequences are at: https://github.com/AK1RAJ/piMaker/tree/main/refSeq
@@ -28,6 +28,9 @@ DIR <- "E:/TidyCode"                  #"C:/" put your directory here
 BAM <- paste0(DIR,"/BAM") #location of the BAM alignment files
 REF <- paste0(DIR,"/refSeq") #location of the reference sequences if you have them, if not do not run the first bit of code
 OUT <- paste0(DIR,"/Output") #this directory is only used if you set the savefiles to true
+
+#assign colours for the plots to differentiate positive reads, negative reads and combined:
+group.colours <- c(Pos = "red3", Neg = "blue2", Overall ="skyblue4")
 
 #get the genome length, if this is not done, the length will be calculated from 
 #the BAM file, but may miss uncovered regions
@@ -91,8 +94,8 @@ for(i in 1:length(SizeDistribution)){
   dat <- data.frame(t(data))
   dat$x <- row.names(dat)
   gg <- ggplot(dat, aes(x = x) )+
-    geom_col(aes( y = Pos))+
-    geom_col(aes( y = Neg))+
+    geom_col(aes( y = Pos),colour = "black", fill = group.colors["Pos"])+
+    geom_col(aes( y = Neg),colour = "black", fill = group.colors["Neg"])+
     xlab ("Size")+
     ylab ("Count")+
     ylim((0-max(MaxCount)*1.1),(0+max(MaxCount)*1.1))+
@@ -134,10 +137,10 @@ for(i in 1:length(Summary_Plot)){
   data <- Summary_Plot[[i]]
   namefile <- names(Summary_Plot[i])
 gg <- ggplot(data = data)+
-  geom_col( aes(x = data$x, y = data$Pos_Mean, fill = "black"), linewidth=0.5, colour="black", alpha=0.9)+
-  geom_col( aes(x = data$x, y = data$Neg_Mean, fill = "red"), linewidth=0.5, colour="black", alpha=0.9)+
-  geom_errorbar( aes(x = data$x, ymin = data$Pos_E_Min, ymax = data$Pos_E_Max), linewidth=1, colour="black", alpha=0.9 )+
-  geom_errorbar( aes(x = data$x, ymin = data$Neg_E_Min, ymax = data$Neg_E_Max), linewidth=1, colour="black", alpha=0.9 )+
+  geom_col( aes(x = data$x, y = Pos_Mean), fill = group.colors["Pos"], linewidth=0.5, colour="black", alpha=0.9)+
+  geom_col( aes(x = data$x, y = Neg_Mean), fill = group.colors["Neg"],linewidth=0.5, colour="black", alpha=0.9)+
+  geom_errorbar( aes(x = data$x, ymin = Pos_E_Min, ymax = Pos_E_Max), linewidth=1, colour="black", alpha=0.9 )+
+  geom_errorbar( aes(x = data$x, ymin = Neg_E_Min, ymax = Neg_E_Max), linewidth=1, colour="black", alpha=0.9 )+
   xlab ("Size")+
   ylab ("Count")+
   ylim (-(max(MaxCount)*1.1),(max(MaxCount)*1.1))+
@@ -180,8 +183,8 @@ for (i in 1:(length(siRNA_Coverage_Plot))) {
   filename <- names(siRNA_Coverage_Plot[i])
   cvr <- data.frame(siRNA_Coverage_Plot[[i]])
   gg<- ggplot()+
-    geom_line(data = cvr, aes(x= x, y = Pos ), colour = "black", linewidth = 0.5)+
-    geom_line(data = cvr, aes(x= x, y = Neg), colour = "red", linewidth = 0.5)+
+    geom_line(data = cvr, aes(x= x, y = Pos ), colour = group.colors["Pos"], linewidth = 0.5)+
+    geom_line(data = cvr, aes(x= x, y = Neg), colour = group.colors["Neg"], linewidth = 0.5)+
     geom_hline(yintercept = 0, linetype = "solid", colour = "grey")+
     ggtitle(paste0(filename))+
     ylim(-(max(siCovCount)*1.1),(max(siCovCount)*1.1))+
@@ -211,8 +214,8 @@ for (i in 1:(length(siRNA_Coverage_Plot_Normalised))) {
   namefile <- (paste0(filename, "_Normalised"))
   data <- siRNA_Coverage_Plot_Normalised[[i]]
   gg<- ggplot(data)+
-    geom_line(aes(x= x, y = Pos_Normalised), colour = "black", linewidth = 0.5)+
-    geom_line(aes(x= x, y = Neg_Normalised), colour = "red", linewidth = 0.5)+
+    geom_line(aes(x= x, y = Pos_Normalised), colour = group.colors["Pos"], linewidth = 0.5)+
+    geom_line(aes(x= x, y = Neg_Normalised), colour = group.colors["Neg"], linewidth = 0.5)+
     geom_hline(yintercept = 0, linetype = "solid", colour = "grey")+
     ggtitle(paste0(namefile))+
     ylim(-1,1)+
@@ -259,14 +262,13 @@ for(i in 1:length(siRNA_Summary)){
   filename <- names(siRNA_Summary[i])
   data <- siRNA_Summary[[i]]
   gg<- ggplot(data)+
-    geom_ribbon(aes(x = x, ymin = Pos_E_min, ymax = Pos_E_max, colour = "SDpos"), alpha = 0.5, linewidth = NULL)+
-    geom_line(aes(x = x, y = Pos_Mean, colour = "Meanpos"), linewidth = 1)+
-    geom_ribbon(aes(x = x, ymin = Neg_E_min, ymax = Neg_E_max, colour = "SDneg"), alpha = 0.5, linewidth = NULL)+
-    geom_line(aes(x = x, y = Neg_Mean, colour = "Meanneg"), linewidth = 1)+
+    geom_ribbon(aes(x = x, ymin = Pos_E_min, ymax = Pos_E_max), , colour = group.colors["Pos"],
+                fill = group.colors["Pos"], alpha = 0.5, linewidth = NULL)+
+    geom_line(aes(x = x, y = Pos_Mean),colour = group.colors["Pos"], linewidth = 1)+
+    geom_ribbon(aes(x = x, ymin = Neg_E_min, ymax = Neg_E_max), colour = group.colors["Neg"],
+                fill = group.colors["Neg"], alpha = 0.5, linewidth = NULL)+
+    geom_line(aes(x = x, y = Neg_Mean), colour = group.colors["Neg"], linewidth = 1)+
     geom_hline(yintercept = 0, linetype = "solid", colour = "grey")+
-    scale_colour_manual("", 
-                        breaks = c("SDpos", "Meanpos", "SDneg", "Meanneg"),
-                        values = c("black", "black", "red", "red"))+
     ggtitle(paste0(filename))+
     ylim(-1,1)+
     xlab ("nt position")+
@@ -932,8 +934,6 @@ for (i in 1:length(pi_Signatures)){
   }
   rm(datp,dat1,dat2, barMaxCount)
 }
-#assign colours for the plots to differentiate positive reads, negative reads and combined:
-group.colors <- c(Pos = "red3", Neg = "blue2", Overall ="skyblue4")
 #and plot 
 for (i in 1:length(samples)){
   namfile <- samples[i]
