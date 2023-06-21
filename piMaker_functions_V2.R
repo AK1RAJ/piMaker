@@ -397,18 +397,18 @@ saveImage <- function(x, SVG = T, PNG = T, scale = 1, width = 14, height = 14, u
 }
 
 #calculate overlap probability per position
-piProb <- function(x, Overlap = c(1:21)) {
+piProb <- function(x, .Overlap = parent.frame()$Overlap) {
   dat <- x
   max <- ncol(dat)
-  min <- max - length(Overlap)
+  min <- max - length(.Overlap)
   range <- ((min+1):(max))
   res <- dat[,c(1,2)]
-  res$Lap_total <- rowSums(dat[,c(3:length(Overlap))], na.rm=TRUE)
+  res$Lap_total <- rowSums(dat[,c(3:length(.Overlap))], na.rm=TRUE)
   
   for (i in 1:length(range)){
     
     pos <- range[i]
-    nam <- paste0("By_",Overlap[i])
+    nam <- paste0("By_",.Overlap[i])
     res[[nam]] <- ifelse(res$Lap_total > 0,
                          ifelse( is.na(dat[,(pos)]/res$Lap_total),0, dat[,(pos)]/res$Lap_total ),
                          0
@@ -418,13 +418,13 @@ piProb <- function(x, Overlap = c(1:21)) {
   return(res)
 }
 
-piProbSum <- function(x, Overlap){ #clone of overLaps function but calculates probability by dividing input by total
+piProbSum <- function(x, .Overlap = parent.frame()$Overlap){ #clone of overLaps function but calculates probability by dividing input by total
   #get input
   Lap <-  x
   lap <- data.frame(Lap[, grepl("By", colnames(Lap))])
   oLap <- c()
   #count the overlap totals from the corresponding column
-  for (o in 1:length(Overlap)){
+  for (o in 1:length(.Overlap)){
     
     v <- sum(lap[,o], na.rm = TRUE)
     
@@ -442,20 +442,20 @@ piProbSum <- function(x, Overlap){ #clone of overLaps function but calculates pr
 }
 
 #calculate weighted overlap probability per position
-piProbWeighted <- function(x, Overlap = c(1:21)) {
+piProbWeighted <- function(x, .Overlap = parent.frame()$Overlap) {
   dat <- x
   max <- ncol(dat)
-  min <- max - length(Overlap)
+  min <- max - length(.Overlap)
   range <- ((min+1):(max))
   res <- dat[,c(1,2)]
-  res$Lap_total <- rowSums(dat[,c(3:length(Overlap))], na.rm=TRUE)
+  res$Lap_total <- rowSums(dat[,c(3:length(.Overlap))], na.rm=TRUE)
   
   res$weighting <- res$Total/sum(res$Total)
   
   for (i in 1:length(range)){
     
     pos <- range[i]
-    nam <- paste0("By_",Overlap[i])
+    nam <- paste0("By_",.Overlap[i])
     res[[nam]] <- ifelse(res$Lap_total > 0,
                          ifelse( is.na(dat[,(pos)]/res$Lap_total),0, (dat[,(pos)]/res$Lap_total)*res$weighting ),
                          0
@@ -465,17 +465,16 @@ piProbWeighted <- function(x, Overlap = c(1:21)) {
   return(res)
 }
 
-
-piCatcherPos <- function(x, Length_In = parent.frame()$Length_In, 
-                         Target_Length = parent.frame()$Target_Length, 
-                         Overlap = parent.frame()$Overlap, 
+piCatcherPos <- function(x, .Length_In = parent.frame()$Length_In, 
+                         .Target_Length = parent.frame()$Target_Length, 
+                         .Overlap = parent.frame()$Overlap, 
                          Split = "Pos"){
   
   input <- x
   lap <-c()
   #split the data into the opposing strands
   datIn <- data.frame(input[, grepl(paste0(Split), colnames(input))])
-  datIn <- data.frame(datIn[, names(dplyr::select(datIn, matches(c( as.character(Length_In)))))])#makes sure we only keep the lengths we want
+  datIn <- data.frame(datIn[, names(dplyr::select(datIn, matches(c( as.character(.Length_In)))))])#makes sure we only keep the lengths we want
   
   #make two frames from each strand with the total reads starting at each position
   datIn$Total <- rowSums(datIn)
@@ -485,7 +484,7 @@ piCatcherPos <- function(x, Length_In = parent.frame()$Length_In,
   
   #split the data into the opposing strands
   datO <- data.frame(input[, !grepl(paste0(Split), colnames(input))])
-  datO <- data.frame(datO[,names(dplyr::select(datO, matches(c( as.character(Target_Length)))))])#only keep the targets
+  datO <- data.frame(datO[,names(dplyr::select(datO, matches(c( as.character(.Target_Length)))))])#only keep the targets
   
   #make two frames from each strand with the total reads starting at each position
   datO$Total <- rowSums(datO)
@@ -499,8 +498,8 @@ piCatcherPos <- function(x, Length_In = parent.frame()$Length_In,
     max <- lap[i,2]
     
     #find the range of rows which are above 0 
-    range <- ( ( paste(i-length(Overlap)) ) : ( paste(i) ) )
-    ind <- which( ( paste(i-length(Overlap)) ) : ( paste(i) ) > 0)
+    range <- ( ( paste(i-length(.Overlap)) ) : ( paste(i) ) )
+    ind <- which( ( paste(i-length(.Overlap)) ) : ( paste(i) ) > 0)
     #set the target indexes     
     targ <- range[ind]
     #get the target    
@@ -508,7 +507,7 @@ piCatcherPos <- function(x, Length_In = parent.frame()$Length_In,
     var <- c()
     #count the overlaps    
     
-    for(l in 1:length(Overlap)){
+    for(l in 1:length(.Overlap)){
       
       var[l] <- target[(l)]
       #this now limits the overlaps counted to the number of input sequences 
@@ -523,7 +522,7 @@ piCatcherPos <- function(x, Length_In = parent.frame()$Length_In,
     }
     #return the result    
     res <- t(data.frame(var))
-    colnames(res) <- paste0("By_", 1:length(Overlap))
+    colnames(res) <- paste0("By_", 1:length(.Overlap))
     rownames(res) <- i
     
     ifelse( ( exists("result") ), result <- rbind( result, res ), result <- res) 
@@ -532,20 +531,20 @@ piCatcherPos <- function(x, Length_In = parent.frame()$Length_In,
   
   
   Lap <- cbind(lap, result)
-  rm(result, Target_Length, Length_In, Overlap)
+
   return(Lap)
 } 
 
-piCatcherNeg <- function(x,Length_In = parent.frame()$Length_In, 
-                         Target_Length = parent.frame()$Target_Length, 
-                         Overlap = parent.frame()$Overlap, 
+piCatcherNeg <- function(x, .Length_In = parent.frame()$Length_In, 
+                         .Target_Length = parent.frame()$Target_Length, 
+                         .Overlap = parent.frame()$Overlap, 
                          Split = "Neg"){
   
   input <- x
   lap <-c()
   #split the data into the opposing strands
   datIn <- data.frame(input[, grepl(paste0(Split), colnames(input))])
-  datIn <- data.frame(datIn[, names(dplyr::select(datIn, matches(c( as.character(Length_In)))))])#makes sure we only keep the lengths we want
+  datIn <- data.frame(datIn[, names(dplyr::select(datIn, matches(c( as.character(.Length_In)))))])#makes sure we only keep the lengths we want
   
   #make two frames from each strand with the total reads starting at each position
   datIn$Total <- rowSums(datIn)
@@ -555,7 +554,7 @@ piCatcherNeg <- function(x,Length_In = parent.frame()$Length_In,
   
   #split the data into the opposing strands
   datO <- data.frame(input[, !grepl(paste0(Split), colnames(input))])
-  datO <- data.frame(datO[,names(dplyr::select(datO, matches(c( as.character(Target_Length)))))])#only keep the targets
+  datO <- data.frame(datO[,names(dplyr::select(datO, matches(c( as.character(.Target_Length)))))])#only keep the targets
   
   #make two frames from each strand with the total reads starting at each position
   datO$Total <- rowSums(datO)
@@ -569,8 +568,8 @@ piCatcherNeg <- function(x,Length_In = parent.frame()$Length_In,
     max <- lap[i,2]
     
     #find the range of rows which are above 0 
-    range <- ( ( paste(i-length(Overlap)) ) : ( paste(i) ) )
-    ind <- which( ( paste(i-length(Overlap)) ) : ( paste(i) ) > 0)
+    range <- ( ( paste(i-length(.Overlap)) ) : ( paste(i) ) )
+    ind <- which( ( paste(i-length(.Overlap)) ) : ( paste(i) ) > 0)
     #set the target indexes     
     targ <- range[ind]
     #get the target    
@@ -578,7 +577,7 @@ piCatcherNeg <- function(x,Length_In = parent.frame()$Length_In,
     var <- c()
     #count the overlaps    
     
-    for(l in 1:length(Overlap)){
+    for(l in 1:length(.Overlap)){
       
       var[l] <- target[(l)]
       #this now limits the overlaps counted to the number of input sequences 
@@ -593,7 +592,7 @@ piCatcherNeg <- function(x,Length_In = parent.frame()$Length_In,
     }
     #return the result    
     res <- t(data.frame(var))
-    colnames(res) <- paste0("By_", 1:length(Overlap))
+    colnames(res) <- paste0("By_", 1:length(.Overlap))
     rownames(res) <- i
     
     ifelse( ( exists("result") ), result <- rbind( result, res ), result <- res) 
@@ -602,14 +601,13 @@ piCatcherNeg <- function(x,Length_In = parent.frame()$Length_In,
   
   
   Lap <- cbind(lap, result)
-  rm(result, Target_Length, Length_In, Overlap)
+
   return(Lap)
 } 
 
-piCatcherDual <- function(x, Length_In , Target_Length , Overlap){
-  
+piCatcherDual <- function(x, Length_In , Target_Length , Overlap = c(1:21)){
+  #define and set inputs
   input <- x
-  
   datPos <- c()
   datNeg <- c()
   
@@ -633,28 +631,28 @@ piCatcherDual <- function(x, Length_In , Target_Length , Overlap){
                          sd(oLapsFinal$Neg_count))
   
   #get overlap probability for each position
-  piLapProbPos <- piProb(datPos, Overlap = parent.frame()$Overlap)
-  piLapProbNeg <- piProb(datNeg, Overlap = parent.frame()$Overlap)
+  piLapProbPos <- piProb(datPos)
+  piLapProbNeg <- piProb(datNeg)
   #get weighted probability for each position
-  piLapProbWeightedPos <- piProbWeighted(datPos, Overlap = parent.frame()$Overlap)
-  piLapProbWeightedNeg <- piProbWeighted(datNeg, Overlap = parent.frame()$Overlap)
+  piLapProbWeightedPos <- piProbWeighted(datPos)
+  piLapProbWeightedNeg <- piProbWeighted(datNeg)
   #calculate probability for the overlap length
-  piProbTotPos <- piProbSum(piLapProbPos, Overlap = parent.frame()$Overlap)
-  piProbTotNeg <- piProbSum(piLapProbNeg, Overlap = parent.frame()$Overlap)
+  piProbTotPos <- piProbSum(piLapProbPos)
+  piProbTotNeg <- piProbSum(piLapProbNeg)
   
   piLapProb <- cbind(piProbTotPos,piProbTotNeg)
   piLapProb <- piLapProb[,c(2,4)]
   colnames(piLapProb) <- c("Pos_probability", "Neg_probability")
   #calculate weighted probability for the overlap length
-  piProbWeightedTotPos <- piProbSum(piLapProbWeightedPos, Overlap = parent.frame()$Overlap)
-  piProbWeightedTotNeg <- piProbSum(piLapProbWeightedNeg, Overlap = parent.frame()$Overlap)
+  piProbWeightedTotPos <- piProbSum(piLapProbWeightedPos)
+  piProbWeightedTotNeg <- piProbSum(piLapProbWeightedNeg)
   
   piProbWeight <- cbind(piProbWeightedTotPos, piProbWeightedTotNeg)
   piProbWeight <- piProbWeight[,c(2,4)]
   colnames(piProbWeight) <- c("Pos_weighted_probability", "Neg_weighted_probability")
   
   #get results
-  ResFin <- cbind(oLapsFinal, piLapProb,piProbWeight)
+  ResFin <- cbind(oLapsFinal, piLapProb, piProbWeight)
   
   #get totals
   ResFin$Overlaps <- ResFin$Pos_count + ResFin$Neg_count
@@ -668,8 +666,6 @@ piCatcherDual <- function(x, Length_In , Target_Length , Overlap){
   return(ResFin)
   
 }
-data <- piSeqList[[i]]
-Count <- c(24:29)
 
 makeTally <- function(x, Genome_Length, Target_Length){
   #define the parameters

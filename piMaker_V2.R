@@ -30,7 +30,10 @@ REF <- paste0(DIR,"/refSeq") #location of the reference sequences if you have th
 OUT <- paste0(DIR,"/Output") #this directory is only used if you set the savefiles to true
 
 #assign colours for the plots to differentiate positive reads, negative reads and combined:
-group.colours <- c(Pos = "red3", Neg = "blue2", Overall ="skyblue4")
+group.colours <- c(Pos = "red3", Neg = "blue2", Overall = "skyblue4")
+#assign colours to the piRNA sizes:
+piRNA.colours <- c("24" = "magenta3", "25" = "dodgerblue2", "26" = "purple3",
+                   "27" = "darkgoldenrod3", "28" = "aquamarine4", "29" = "orangered3")
 
 #get the genome length, if this is not done, the length will be calculated from 
 #the BAM file, but may miss uncovered regions
@@ -94,8 +97,8 @@ for(i in 1:length(SizeDistribution)){
   dat <- data.frame(t(data))
   dat$x <- row.names(dat)
   gg <- ggplot(dat, aes(x = x) )+
-    geom_col(aes( y = Pos),colour = "black", fill = group.colors["Pos"])+
-    geom_col(aes( y = Neg),colour = "black", fill = group.colors["Neg"])+
+    geom_col(aes( y = Pos),colour = "black", fill = group.colours["Pos"])+
+    geom_col(aes( y = Neg),colour = "black", fill = group.colours["Neg"])+
     xlab ("Size")+
     ylab ("Count")+
     ylim((0-max(MaxCount)*1.1),(0+max(MaxCount)*1.1))+
@@ -137,8 +140,8 @@ for(i in 1:length(Summary_Plot)){
   data <- Summary_Plot[[i]]
   namefile <- names(Summary_Plot[i])
 gg <- ggplot(data = data)+
-  geom_col( aes(x = data$x, y = Pos_Mean), fill = group.colors["Pos"], linewidth=0.5, colour="black", alpha=0.9)+
-  geom_col( aes(x = data$x, y = Neg_Mean), fill = group.colors["Neg"],linewidth=0.5, colour="black", alpha=0.9)+
+  geom_col( aes(x = data$x, y = Pos_Mean), fill = group.colours["Pos"], linewidth=0.5, colour="black", alpha=0.9)+
+  geom_col( aes(x = data$x, y = Neg_Mean), fill = group.colours["Neg"],linewidth=0.5, colour="black", alpha=0.9)+
   geom_errorbar( aes(x = data$x, ymin = Pos_E_Min, ymax = Pos_E_Max), linewidth=1, colour="black", alpha=0.9 )+
   geom_errorbar( aes(x = data$x, ymin = Neg_E_Min, ymax = Neg_E_Max), linewidth=1, colour="black", alpha=0.9 )+
   xlab ("Size")+
@@ -183,8 +186,8 @@ for (i in 1:(length(siRNA_Coverage_Plot))) {
   filename <- names(siRNA_Coverage_Plot[i])
   cvr <- data.frame(siRNA_Coverage_Plot[[i]])
   gg<- ggplot()+
-    geom_line(data = cvr, aes(x= x, y = Pos ), colour = group.colors["Pos"], linewidth = 0.5)+
-    geom_line(data = cvr, aes(x= x, y = Neg), colour = group.colors["Neg"], linewidth = 0.5)+
+    geom_line(data = cvr, aes(x= x, y = Pos ), colour = group.colours["Pos"], linewidth = 0.5)+
+    geom_line(data = cvr, aes(x= x, y = Neg), colour = group.colours["Neg"], linewidth = 0.5)+
     geom_hline(yintercept = 0, linetype = "solid", colour = "grey")+
     ggtitle(paste0(filename))+
     ylim(-(max(siCovCount)*1.1),(max(siCovCount)*1.1))+
@@ -214,8 +217,8 @@ for (i in 1:(length(siRNA_Coverage_Plot_Normalised))) {
   namefile <- (paste0(filename, "_Normalised"))
   data <- siRNA_Coverage_Plot_Normalised[[i]]
   gg<- ggplot(data)+
-    geom_line(aes(x= x, y = Pos_Normalised), colour = group.colors["Pos"], linewidth = 0.5)+
-    geom_line(aes(x= x, y = Neg_Normalised), colour = group.colors["Neg"], linewidth = 0.5)+
+    geom_line(aes(x= x, y = Pos_Normalised), colour = group.colours["Pos"], linewidth = 0.5)+
+    geom_line(aes(x= x, y = Neg_Normalised), colour = group.colours["Neg"], linewidth = 0.5)+
     geom_hline(yintercept = 0, linetype = "solid", colour = "grey")+
     ggtitle(paste0(namefile))+
     ylim(-1,1)+
@@ -262,12 +265,12 @@ for(i in 1:length(siRNA_Summary)){
   filename <- names(siRNA_Summary[i])
   data <- siRNA_Summary[[i]]
   gg<- ggplot(data)+
-    geom_ribbon(aes(x = x, ymin = Pos_E_min, ymax = Pos_E_max), , colour = group.colors["Pos"],
-                fill = group.colors["Pos"], alpha = 0.5, linewidth = NULL)+
-    geom_line(aes(x = x, y = Pos_Mean),colour = group.colors["Pos"], linewidth = 1)+
-    geom_ribbon(aes(x = x, ymin = Neg_E_min, ymax = Neg_E_max), colour = group.colors["Neg"],
-                fill = group.colors["Neg"], alpha = 0.5, linewidth = NULL)+
-    geom_line(aes(x = x, y = Neg_Mean), colour = group.colors["Neg"], linewidth = 1)+
+    geom_ribbon(aes(x = x, ymin = Pos_E_min, ymax = Pos_E_max), , colour = group.colours["Pos"],
+                fill = group.colours["Pos"], alpha = 0.5, linewidth = NULL)+
+    geom_line(aes(x = x, y = Pos_Mean),colour = group.colours["Pos"], linewidth = 1)+
+    geom_ribbon(aes(x = x, ymin = Neg_E_min, ymax = Neg_E_max), colour = group.colours["Neg"],
+                fill = group.colours["Neg"], alpha = 0.5, linewidth = NULL)+
+    geom_line(aes(x = x, y = Neg_Mean), colour = group.colours["Neg"], linewidth = 1)+
     geom_hline(yintercept = 0, linetype = "solid", colour = "grey")+
     ggtitle(paste0(filename))+
     ylim(-1,1)+
@@ -283,7 +286,7 @@ for(i in 1:length(siRNA_Summary)){
 #load functions and colours
 #function to find overlaps in piRNAs 
 #these colours match standard peak viewers
-DNA_col_scheme =  make_col_scheme(chars=c('A', 'T', 'G', 'C'), groups= NULL, 
+DNA_col_scheme =  make_col_scheme(chars=c('A', 'U', 'G', 'C'), groups= NULL, 
                                   cols=c('green3', 'red2', 'black', 'blue'), name='DNA_col_scheme')
 
 Sizes <- c(24:29) #put in the piRNA sizes we are looking for here
@@ -410,8 +413,8 @@ for (i in 1: length(piMatrix)){
   rsq <- makeRsq(rsq)
 gg <- ggplot(data)+
   geom_hline(yintercept = 0, linetype = "solid", colour = "grey")+
-  geom_col(aes(x = pos, y = Pos, colour = "black"))+
-  geom_col(aes(x = pos, y = Neg, colour = "red"))+
+  geom_col(aes(x = pos, y = Pos), colour = group.colours["Pos"])+
+  geom_col(aes(x = pos, y = Neg), colour = group.colours["Neg"])+
   ggtitle(paste0(filename))+
   ylim(-max(piCount)*1.1,max(piCount)*1.1)+
   xlim(0,rsq)+
@@ -429,8 +432,8 @@ for (i in 1: length(siMatrix)){
   rsq <- makeRsq(rsq)
   gg <- ggplot(data)+
     geom_hline(yintercept = 0, linetype = "solid", colour = "grey")+
-    geom_col(aes(x = pos, y = Pos, colour = "black"))+
-    geom_col(aes(x = pos, y = Neg, colour = "red"))+
+    geom_col(aes(x = pos, y = Pos), colour = group.colours["Pos"])+
+    geom_col(aes(x = pos, y = Neg), colour = group.colours["Neg"])+
     ggtitle(paste0(filename))+
     ylim(-max(siCount),max(siCount))+
     xlim(0,rsq)+
@@ -439,11 +442,12 @@ for (i in 1: length(siMatrix)){
   plot(gg)
   saveImage(paste0(filename))
 }
-#now split the lists into respective piRNAs
+#now split the lists into respective piRNAs 
 if(exists("piRNA_List")){rm(piRNA_List)}
 for (i in 1:(length(piSeqList))) {
   namfile <- names(piSeqList[i])
   data <- piSeqList[[i]]
+  data$seq <- gsub("T", "U", data$seq)
   for (s in 1:length(Sizes)) {
     sz = Sizes[s]
     datsz <- dplyr::filter(data, data$qwidth == sz)
@@ -455,7 +459,7 @@ for (i in 1:(length(piSeqList))) {
       namN <- paste0(namj, "_Neg")
       datjPos <- dplyr::filter(datj, datj$strand == "+")
       datjNeg <- dplyr::filter(datj, datj$strand == "-")
-      datjNeg$RC <- reverseComplement(DNAStringSet(datjNeg$seq))
+      datjNeg$RC <- reverseComplement(RNAStringSet(datjNeg$seq))
       piPos <- as.data.frame(substr(datjPos$seq, 1, 20))
       piNeg <- as.data.frame(substr(datjNeg$RC, 1, 20))
       if(exists("piRNA_List")){
@@ -468,12 +472,12 @@ for (i in 1:(length(piSeqList))) {
       }
       #and make the sequence plots
       gp <- ggplot()+
-        geom_logo(piPos, method = 'prob', seq_type = "dna", font = "helvetica_bold", col_scheme = DNA_col_scheme)+
+        geom_logo(piPos, method = 'prob', seq_type = "rna", font = "helvetica_bold", col_scheme = DNA_col_scheme)+
         theme_logo()+
         ggtitle(namP)+
         piMaker_theme
       gn <- ggplot()+
-        geom_logo(piNeg, method = 'prob', seq_type = "dna", font = "helvetica_bold", col_scheme = DNA_col_scheme)+
+        geom_logo(piNeg, method = 'prob', seq_type = "rna", font = "helvetica_bold", col_scheme = DNA_col_scheme)+
         theme_logo()+
         ggtitle(namN)+
         piMaker_theme
@@ -508,11 +512,11 @@ for (i in 1:(length(piSeqList))) {
       colnames(result) <- c("pos", c(24:29))
       if(exists("piTally_List")){
         piTally_List[[namB]] <- result
-        rm(result,res)
+        rm(result)
       }else{
         piTally_List <- list()
         piTally_List[[namB]] <- result
-        rm(result,res)
+        rm(result)
       }
     }
   }
@@ -541,11 +545,11 @@ for (i in 1:(length(siSeqList))) {
       colnames(result) <- c("pos", c(21))
       if(exists("siTally_List")){
         siTally_List[[namB]] <- result
-        rm(result,res)
+        rm(result)
       }else{
         siTally_List <- list()
         siTally_List[[namB]] <- result
-        rm(result,res)
+        rm(result)
       }
     }
   }
@@ -622,284 +626,60 @@ for(i in 1:length(piTally_List_Matrix)){
   gg <- ggplot()+
     geom_hline(yintercept = 0, linetype = "solid", colour = "grey")+
     geom_rect(data = dat_2429, aes(ymin = 0, ymax = Pos_24, xmin = Pos_24_x,
-                                   xmax = Pos_24_xend, colour = "red", fill = "red", alpha = 0.4))+
+                                   xmax = Pos_24_xend, fill = "24"), colour = piRNA.colours["24"], alpha = 0.4)+
     geom_rect(data = dat_2429, aes(ymin = 0, ymax = - Neg_24, xmin = Neg_24_x,
-                                   xmax = Neg_24_xend, colour = "red", fill = "red", alpha = 0.4))+ 
+                                   xmax = Neg_24_xend, fill = "24"), colour = piRNA.colours["24"], alpha = 0.4)+ 
     
     
     geom_rect(data = dat_2429, aes(ymin = 0, ymax = Pos_25, xmin = Pos_25_x,
-                                   xmax = Pos_25_xend, colour = "black", fill = "black",  alpha = 0.4))+
+                                   xmax = Pos_25_xend, fill = "25"), colour = piRNA.colours["25"],  alpha = 0.4)+
     geom_rect(data = dat_2429, aes(ymin = 0, ymax = - Neg_25, xmin = Neg_25_x,
-                                   xmax = Neg_25_xend, colour = "black", fill = "black",  alpha = 0.4))+
+                                   xmax = Neg_25_xend, fill = "25"), colour = piRNA.colours["25"],  alpha = 0.4)+
     
     
     geom_rect(data = dat_2429, aes(ymin = 0, ymax = Pos_26, xmin = Pos_26_x,
-                                   xmax = Pos_26_xend, colour = "green", fill = "green",  alpha = 0.4))+
+                                   xmax = Pos_26_xend, fill = "26"), colour = piRNA.colours["26"],  alpha = 0.4)+
     geom_rect(data = dat_2429, aes(ymin = 0, ymax = - Neg_26, xmin = Neg_26_x,
-                                   xmax = Neg_26_xend, colour = "green", fill = "green",  alpha = 0.4))+
+                                   xmax = Neg_26_xend, fill = "26"), colour = piRNA.colours["26"],  alpha = 0.4)+
     
     
     geom_rect(data = dat_2429, aes(ymin = 0, ymax = Pos_27, xmin = Pos_27_x,
-                                   xmax = Pos_27_xend, colour = "orange", fill = "orange",  alpha = 0.4))+
+                                   xmax = Pos_27_xend, fill = "27"), colour = piRNA.colours["27"],  alpha = 0.4)+
     geom_rect(data = dat_2429, aes(ymin = 0, ymax = - Neg_27, xmin = Neg_27_x,
-                                   xmax = Neg_27_xend, colour = "orange", fill = "orange",  alpha = 0.4))+
+                                   xmax = Neg_27_xend, fill = "27"), colour = piRNA.colours["27"],  alpha = 0.4)+
     
     
     geom_rect(data = dat_2429, aes(ymin = 0, ymax = Pos_28, xmin = Pos_28_x,
-                                   xmax = Pos_28_xend, colour = "blue", fill = "blue",  alpha = 0.4))+
+                                   xmax = Pos_28_xend, fill = "28"), colour = piRNA.colours["28"],  alpha = 0.4)+
     geom_rect(data = dat_2429, aes(ymin = 0, ymax = - Neg_28, xmin = Neg_28_x,
-                                   xmax = Neg_28_xend, colour = "blue", fill = "blue",  alpha = 0.4))+
+                                   xmax = Neg_28_xend, fill = "28"), colour = piRNA.colours["28"],  alpha = 0.4)+
     
     geom_rect(data = dat_2429, aes(ymin = 0, ymax = Pos_29, xmin = Pos_29_x,
-                                   xmax = Pos_25_xend, colour = "purple", fill = "purple",  alpha = 0.4))+
+                                   xmax = Pos_25_xend, fill = "29"), colour = piRNA.colours["29"],  alpha = 0.4)+
     geom_rect(data = dat_2429, aes(ymin = 0, ymax = - Neg_29, xmin = Neg_29_x,
-                                   xmax = Neg_25_xend, colour = "purple", fill = "purple",  alpha = 0.4))+
+                                   xmax = Neg_25_xend, fill = "29"), colour = piRNA.colours["29"],  alpha = 0.4)+
     ylim(-max(piMax),max(piMax))+
-    guides( fill = FALSE, alpha = FALSE)+
-    scale_colour_discrete(name = "Size",labels=c('24', '25', "26", "27", "28", "29"))+
-    guides(color = guide_legend(override.aes=list(shape = 22, alpha = 0.05,
-                                                  colour = c("red","black","green","orange","blue","purple"), 
-                                                  fill = c("red","black","green","orange","blue","purple"))))+
     ggtitle(paste(nam))+
-    piMaker_theme
+    piMaker_theme+
+    scale_fill_manual("Size", values = c(piRNA.colours))
+
   plot(gg)
   saveImage(paste0(nam))
 }    
 #make the overlap matrix
-overlap <- c(1:21) #will count overlaps of this length
-Split <- c("Pos", "Neg")#this is the two dimensions of the sequencing reads - doesn't need defining really! 
-if(exists("pi_Signature_List")){rm(pi_Signature_List, piProbWeightMax, piProbMax, piMax2)}
-for(i in 1:length(piTally_List_Matrix)){
-  namp <- names(piTally_List_Matrix[i])
-  namp <- gsub("_Tally_Matrix","",namp)
-  datp <- piTally_List_Matrix[[i]]
-  for(s in 1:length(c(Split))){
-    spt <- Split[s]
-    namD <- paste0(namp, "_", spt, "_piRNA_Overlap")
-    #get the overlaps
-    piLap <- piCatcher(datp, Length_In = c(24:29), Target_Length = c(24:29), Overlap = c(1:21), Split = spt)
-    #get overlap probability for each position
-    piLapProb <- piProb(piLap, Overlap = c(1:21))
-    #get weighted probability for each position
-    piLapProbWeighted <- piProbWeighted(piLap, Overlap = c(1:21))
-    #calculate probability for the overlap length
-    piProbTot <- piProbSum(piLapProb, Overlap = c(1:21))
-    #calculate weighted probability for the overlap length
-    piProbWeightedTot <- piProbSum(piLapProbWeighted, Overlap = c(1:21))
-    #merge the probabilities
-    piProbability <- data.frame(cbind(piProbTot$Probability, piProbWeightedTot$Probability))
-    colnames(piProbability) <- c("Probability", "Weighted_Probability")
-    #count the overlaps
-    overPiLap <- overLaps(piLap, Overlap = c(1:21))
-    ifelse( exists("piMax2"), piMax2 <- rbind( piMax2, max(overPiLap$count) ), piMax2 <- c(max(overPiLap$count)) )
-    ifelse( exists("piProbMax"), 
-            piProbMax <- rbind( piProbMax, max(piProbability$Probability) ),
-            piProbMax <- c(max(piProbability$Probability))  )
-    ifelse( exists("piProbWeightMax"), 
-            piProbWeightMax <- rbind( piProbWeightMax, max(piProbability$Weighted_Probability) ),
-            piProbWeightMax <- c(max(piProbability$Weighted_Probability))  )
-    #now calculate the z-score from the overlaps
-    piZscore <- Z_Score(overPiLap)
-    results <- cbind(piZscore, piProbability)
-    
-    if(exists("pi_Signature_List")){
-      pi_Signature_List[[namD]] <- results
-      rm(results)
-    }else{
-      pi_Signature_List <- list()
-      pi_Signature_List[[namD]] <- results
-      rm(results)
-    }
-  }
-  rm(piLap,piLapProb,piLapProbWeighted,piProbTot,piProbWeightedTot,piProbability,overPiLap,piZscore)
-}
-#overlap matrix for the siRNAs
-if(exists("si_Signature_List")){rm(si_Signature_List, siProbMax, siProbWeightMax, siMAx2)}
-for(i in 1:length(siTally_List_Matrix)){
-  nams <- names(siTally_List_Matrix[i])
-  nams <- gsub("_Tally_Matrix","",nams)
-  dats <- siTally_List_Matrix[[i]]
-  for(s in 1:length(c(Split))){
-    spt <- Split[s]
-    namC <- paste0(nams, "_", spt, "_siRNA_Overlap")
-    #get the overlaps
-    siLap <- piCatcher(dats, Length_In = c(21), Target_Length = c(21), Overlap = c(1:21), Split = spt)
-    #count the overlaps
-    siLapProb <- piProb(siLap, Overlap = c(1:21))
-    #get weighted probability for each position
-    siLapProbWeighted <- piProbWeighted(siLap, Overlap = c(1:21))
-    #calculate probability for the overlap length
-    siProbTot <- piProbSum(siLapProb, Overlap = c(1:21))
-    #calculate weighted probability for the overlap length
-    siProbWeightedTot <- piProbSum(siLapProbWeighted, Overlap = c(1:21))
-    #merge the probabilities
-    siProbability <- data.frame(cbind(siProbTot$Probability, siProbWeightedTot$Probability))
-    colnames(siProbability) <- c("Probability", "Weighted_Probability")
-    #count the overlaps
-    overSiLap <- overLaps(siLap, Overlap = c(1:21))
-    ifelse( exists("siMax2"), 
-            siMax2 <- rbind( siMax2, max(overSiLap$count) ), 
-            siMax2 <- c(max(overSiLap$count)) )
-    ifelse( exists("siProbMax"),
-            siProbMax <- rbind( siProbMax, max(siProbability$Probability) ),
-            siProbMax <- c(max(siProbability$Probability))  )
-    ifelse( exists("siProbWeightMax"), siProbWeightMax <- rbind( siProbWeightMax, max(siProbability$Weighted_Probability) ),
-            siProbWeightMax <- c(max(siProbability$Weighted_Probability))  )
-    #now calculate the z-score from the overlaps
-    siZscore <- Z_Score(overSiLap)
-    results <- cbind(siZscore, siProbability)
-    if(exists("si_Signature_List")){
-      si_Signature_List[[namC]] <- results
-      rm(results)
-    }else{
-      si_Signature_List <- list()
-      si_Signature_List[[namC]] <- results
-      rm(results)
-    }
-  }
-  rm(siLap,siLapProb,siLapProbWeighted,siProbTot,siProbWeightedTot,siProbability,overSiLap,siZscore)
-} 
-#plot the pi overlap and z-score for the piRNAs 
-for (i in 1:length(samples)){
-  namfile <- samples[i]
-  for(r in 1:length(refSeq)){
-    Rnam <- refSeq[r]
-    for(s in 1:length(Split)){
-      spt <- Split[s]
-      dat <- pi_Signature_List [[grep(paste0(namfile, "_", Rnam, "_", spt, "_piRNA_Overlap"), names(pi_Signature_List))]]
-      namd <- paste0(namfile, "_", Rnam, "_", spt, "_pi")
-      
-      gz <- ggplot(data = dat, aes(x = x, y = Z))+
-        geom_line(aes(colour = "red"), linewidth = 1 )+
-        #ggtitle(paste0(namd))+
-        ylim(-5,5)+
-        ylab("Z-Score")+
-        xlab("Overlap (nt)")+
-        theme(legend.position="none")+
-        guides(colour = FALSE)+
-        #theme(aspect.ratio = 0.25:1)+
-        piMaker_theme
-      #plot(gz)
-      
-      go <- ggplot(data = dat, aes(x = x, y = count))+
-        geom_col(aes(colour = "black"), linewidth = 1)+
-        #ggtitle(paste0(namd))+
-        ylim(0, (max(piMax2)+25))+
-        xlab("Overlap (nt)")+
-        ylab("No. of pairs")+
-        guides(colour = FALSE)+
-        piMaker_theme
-      #plot(go)
-      
-      gp <- ggplot(data = dat, aes(x = x, y = Probability))+
-        geom_line(colour = "blue", linewidth = 1 )+
-        #ggtitle(paste0(namd))+
-        ylim(0, (max(piProbMax)*1.1))+
-        ylab("Probability")+
-        xlab("Overlap (nt)")+
-        theme(legend.position="none")+
-        guides(colour = FALSE)+
-        #theme(aspect.ratio = 0.25:1)+
-        piMaker_theme
-      #plot(gp)
-      
-      gpw <- ggplot(data = dat, aes(x = x, y = Weighted_Probability))+
-        geom_line(colour = "blue", linewidth = 1 )+
-        #ggtitle(paste0(namd))+
-        ylim(0,(max(piProbWeightMax)*1.1))+
-        ylab("Weighted probability")+
-        xlab("Overlap (nt)")+
-        theme(legend.position="none")+
-        guides(colour = FALSE)+
-        #theme(aspect.ratio = 0.25:1)+
-        piMaker_theme
-      #plot(gpw)
-      
-      fig <- ggarrange(gz +rremove("xlab") +rremove("x.text"),  gp +rremove("xlab") +rremove("x.text"), go  ,gpw, nrow = 2, ncol = 2 )
-      annotate_figure(fig, top = text_grob(paste0(namd), 
-                                            color = "darkslategrey", face = "bold", size = 14))
-      plot(fig)
-      saveImage(paste0(namd))
-    }
-  }
-}
-#plot the si overlap and z-score for the siRNAs
-for (i in 1:length(samples)){
-  namfile <- samples[i]
-  for(r in 1:length(refSeq)){
-    Rnam <- refSeq[r]
-    for(s in 1:length(Split)){
-      spt <- Split[s]
-      dat <- si_Signature_List [[grep(paste0(namfile, "_", Rnam, "_", spt, "_siRNA_Overlap"), names(si_Signature_List))]]
-      namd <- paste0(namfile, "_", Rnam, "_", spt, "_si")
-      
-      gz <- ggplot(data = dat, aes(x = x, y = Z))+
-        geom_line(aes(colour = "red"), linewidth = 1 )+
-        #ggtitle(paste0(namd))+
-        ylim(-5,5)+
-        ylab("Z-Score")+
-        xlab("Overlap (nt)")+
-        theme(legend.position="none")+
-        guides(colour = FALSE)+
-        #theme(aspect.ratio = 0.25:1)+
-        piMaker_theme
-      #plot(gz)
-      
-      go <- ggplot(data = dat, aes(x = x, y = count))+
-        geom_col(aes(colour = "black"), linewidth = 1)+
-        #ggtitle(paste0(namd))+
-        ylim(0, (max(siMax2)+25))+
-        xlab("Overlap (nt)")+
-        ylab("No. of pairs")+
-        guides(colour = FALSE)+
-        piMaker_theme
-      #plot(go)
-      
-      gp <- ggplot(data = dat, aes(x = x, y = Probability))+
-        geom_line(colour = "blue", linewidth = 1 )+
-        #ggtitle(paste0(namd))+
-        ylim(0,(max(siProbMax)*1.1))+
-        ylab("Probability")+
-        xlab("Overlap (nt)")+
-        theme(legend.position="none")+
-        guides(colour = FALSE)+
-        #theme(aspect.ratio = 0.25:1)+
-        piMaker_theme
-      #plot(gp)
-      
-      gpw <- ggplot(data = dat, aes(x = x, y = Weighted_Probability))+
-        geom_line(colour = "blue", linewidth = 1 )+
-        #ggtitle(paste0(namd))+
-        ylim(0,(max(siProbWeightMax)*1.1))+
-        ylab("Weighted probability")+
-        xlab("Overlap (nt)")+
-        theme(legend.position="none")+
-        guides(colour = FALSE)+
-        #theme(aspect.ratio = 0.25:1)+
-        piMaker_theme
-      #plot(gpw)
-      
-      fig <- ggarrange(gz +rremove("xlab") +rremove("x.text"),  gp +rremove("xlab") +rremove("x.text"), go  ,gpw, nrow = 2, ncol = 2 )
-      annotate_figure(fig, top = text_grob(paste0(namd), 
-                                           color = "darkslategrey", face = "bold", size = 14))
-      plot(fig)
-      saveImage(paste0(namd))
-    }
-  }
-}
-#and if we want to do the whole segment at once:
+Overlap <- c(1:21) #will count overlaps of this length
 if(exists("pi_Signatures")){rm(pi_Signatures, siProMaxW, siProWeiMaxW)}
 for(i in 1:length(piTally_List_Matrix)){
   namp <- names(piTally_List_Matrix[i])
   namp <- gsub("_Tally_Matrix","",namp)
   datp <- piTally_List_Matrix[[i]]
   results <- piCatcherDual(datp, Length_In = c(24:29), Target_Length = c(24:29), Overlap = c(1:21))
-  ifelse( exists("siProMaxW"), 
-          siProMaxW <- rbind( siProMaxW, max(results[,c(6,7)]) ),
-          siProMaxW <- c( max(results[,c(6,7)]) ) )
-  ifelse( exists("siProWeiMaxW"), 
-          siProWeiMaxW <- rbind( siProWeiMaxW, max(results[,c(8,9)]) ),
-          siProWeiMaxW <- c( max(results[,c(8,9)]) )  )
+  ifelse( exists("piProMaxW"), 
+          piProMaxW <- rbind( piProMaxW, max(results[,c(6,7)]) ),
+          piProMaxW <- c( max(results[,c(6,7)]) ) )
+  ifelse( exists("piProWeiMaxW"), 
+          piProWeiMaxW <- rbind( piProWeiMaxW, max(results[,c(8,9)]) ),
+          piProWeiMaxW <- c( max(results[,c(8,9)]) )  )
   if(exists("pi_Signatures")){
     pi_Signatures[[namp]] <- results
     rm(results)
@@ -934,7 +714,59 @@ for (i in 1:length(pi_Signatures)){
   }
   rm(datp,dat1,dat2, barMaxCount)
 }
-#and plot 
+#overlap matrix for the siRNAs
+if(exists("si_Signatures")){rm(si_Signatures, siProbMax, siProbWeightMax)}
+for(i in 1:length(siTally_List_Matrix)){
+    namp <- names(siTally_List_Matrix[i])
+    datp <- siTally_List_Matrix[[i]]
+    namp <- gsub("_Tally_Matrix","",namp)
+    namD <- paste0(namp, "_siRNA_Overlap")
+    #get the overlaps
+    result <- piCatcherDual(datp, Length_In = c(21), Target_Length = c(21), Overlap = c(1:21))
+    
+    ifelse( exists("siProbMax"), 
+            siProbMax <- rbind( siProbMax, max(result[,c(6:7)]) ),
+            siProbMax <- c(max(result[,c(6:7)]))  )
+    ifelse( exists("siProbWeightMax"), 
+            siProbWeightMax <- rbind( siProbWeightMax, max(result[,c(8:9)]) ),
+            siProbWeightMax <- c(max(result[,c(8:9)]))  )
+    
+    if(exists("si_Signatures")){
+      si_Signatures[[namD]] <- result
+      rm(result)
+    }else{
+      si_Signatures <- list()
+      si_Signatures[[namD]] <- result
+      rm(result)
+    }
+}
+#make bar chart data
+if(exists("si_barplot")){rm(si_barplot, sarMax)}
+for (i in 1:length(si_Signatures)){
+  namp <- names(si_Signatures[i])
+  datp <- si_Signatures[[i]]
+  barMaxCount <- max(datp$Overlaps)
+  ifelse(exists("sarMax"), sarMax <- rbind(sarMax, barMaxCount), sarMax <- barMaxCount)
+  datp <- datp[,c(1:3)]
+  dat1 <- datp[,c(1,2)]
+  colnames(dat1) <- c("x", "Count")
+  dat1$Group <- "Pos"
+  dat2 <- datp[,c(1,3)]
+  colnames(dat2) <- c("x", "Count")
+  dat2$Group <- "Neg"
+  res <- bind_rows(dat1, dat2)
+  if(exists("si_barplot")){
+    si_barplot[[namp]] <- res
+    rm(res)
+  }else{
+    si_barplot <- list()
+    si_barplot[[namp]] <- res
+    rm(res)
+  }
+  rm(datp,dat1,dat2, barMaxCount)
+}
+
+#and plot the piRNAs
 for (i in 1:length(samples)){
   namfile <- samples[i]
   for(r in 1:length(refSeq)){
@@ -953,7 +785,7 @@ for (i in 1:length(samples)){
         xlab("Overlap (nt)")+
         theme(legend.position="none")+
         guides(colour = "none")+
-        scale_colour_manual(values=group.colors)+
+        scale_colour_manual(values=group.colours)+
         #theme(aspect.ratio = 0.25:1)+
         piMaker_theme
       #plot(gz)
@@ -967,21 +799,21 @@ for (i in 1:length(samples)){
         guides(colour = FALSE)+
         piMaker_theme+
         theme(legend.position="none")+
-        #scale_colour_manual(values=group.colors)
-        scale_fill_manual(values = group.colors)
+        #scale_colour_manual(values=group.colours)
+        scale_fill_manual(values = group.colours)
       #plot(go)
       
       gp <- ggplot(data = dat, aes(x = x))+
         geom_line(aes(y = Pos_probability, colour = "Pos"), linewidth = 0.75 )+
         geom_line(aes(y = Neg_probability, colour = "Neg"), linewidth = 0.75 )+
         geom_line(aes(y = Probability, colour = "Overall"), linewidth = 1 )+
-        ylim(0, (max(siProMaxW)*1.1))+
+        ylim(0, (max(piProMaxW)*1.1))+
         ylab("probability")+
         xlab("Overlap (nt)")+
         theme(legend.position="none")+
         guides(colour = FALSE)+
         piMaker_theme+
-        scale_colour_manual( values = group.colors) 
+        scale_colour_manual( values = group.colours) 
       #plot(gz)
       
       gpw <- ggplot(data = dat, aes(x = x))+
@@ -989,14 +821,14 @@ for (i in 1:length(samples)){
         geom_line(aes(y = Neg_weighted_probability, colour = "Neg"), linewidth = 0.75 )+
         geom_line(aes(y = Weighted_Probability, colour = "Overall"), linewidth = 1 )+
         #ggtitle(paste0(namd))+
-        ylim(0, (max(siProWeiMaxW)*1.1))+
+        ylim(0, (max(piProWeiMaxW)*1.1))+
         ylab("Weighted probability")+
         xlab("Overlap (nt)")+
         theme(legend.position="none")+
         guides(colour = FALSE)+
         #theme(aspect.ratio = 0.25:1)+
         piMaker_theme+
-        scale_colour_manual( values = group.colors) 
+        scale_colour_manual( values = group.colours) 
       #plot(gpw)
       
       fig <- ggarrange(gz +rremove("xlab") +rremove("x.text"),  gp +rremove("xlab") +rremove("x.text"), go  ,gpw, nrow = 2, ncol = 2 )
@@ -1006,11 +838,80 @@ for (i in 1:length(samples)){
       saveImage(paste0(namd))
     }
 }
+#and the siRNAs
+for (i in 1:length(samples)){
+  namfile <- samples[i]
+  for(r in 1:length(refSeq)){
+    Rnam <- refSeq[r]
+    dat <- si_Signatures [[grep(paste0(namfile, "_", Rnam ), names(si_Signatures))]]
+    datb <- si_barplot [[grep(paste0(namfile, "_", Rnam ), names(si_barplot))]]
+    namd <- paste0(namfile, "_", Rnam, "_pi")
+    
+    gz <- ggplot(data = dat, aes(x = x))+
+      geom_line(aes(y = Pos_Z, colour = "Pos"), linewidth = 0.75 )+
+      geom_line(aes(y = Neg_Z, colour = "Neg"), linewidth = 0.75 )+
+      geom_line(aes(y = Z_Score, colour = "Overall"),  linewidth = 1 )+
+      #ggtitle(paste0(namd))+
+      ylim(-5,5)+
+      ylab("Z-Score")+
+      xlab("Overlap (nt)")+
+      theme(legend.position="none")+
+      guides(colour = "none")+
+      scale_colour_manual(values=group.colours)+
+      #theme(aspect.ratio = 0.25:1)+
+      piMaker_theme
+    #plot(gz)
+    
+    go <- ggplot(data = datb, aes(x = x))+
+      geom_bar(stat = "identity", aes(y = Count, fill = Group, alpha = 0.5), colour = "darkslategrey",  linewidth = 0.75)+
+      #ggtitle(paste0(namd))+
+      ylim(0, (max(sarMax)+25))+
+      xlab("Overlap (nt)")+
+      ylab("No. of pairs")+
+      guides(colour = FALSE)+
+      piMaker_theme+
+      theme(legend.position="none")+
+      #scale_colour_manual(values=group.colours)
+      scale_fill_manual(values = group.colours)
+    #plot(go)
+    
+    gp <- ggplot(data = dat, aes(x = x))+
+      geom_line(aes(y = Pos_probability, colour = "Pos"), linewidth = 0.75 )+
+      geom_line(aes(y = Neg_probability, colour = "Neg"), linewidth = 0.75 )+
+      geom_line(aes(y = Probability, colour = "Overall"), linewidth = 1 )+
+      ylim(0, (max(siProMaxW)*1.1))+
+      ylab("probability")+
+      xlab("Overlap (nt)")+
+      theme(legend.position="none")+
+      guides(colour = FALSE)+
+      piMaker_theme+
+      scale_colour_manual( values = group.colours) 
+    #plot(gz)
+    
+    gpw <- ggplot(data = dat, aes(x = x))+
+      geom_line(aes(y = Pos_weighted_probability, colour = "Pos"), linewidth = 0.75 )+
+      geom_line(aes(y = Neg_weighted_probability, colour = "Neg"), linewidth = 0.75 )+
+      geom_line(aes(y = Weighted_Probability, colour = "Overall"), linewidth = 1 )+
+      #ggtitle(paste0(namd))+
+      ylim(0, (max(siProWeiMaxW)*1.1))+
+      ylab("Weighted probability")+
+      xlab("Overlap (nt)")+
+      theme(legend.position="none")+
+      guides(colour = FALSE)+
+      #theme(aspect.ratio = 0.25:1)+
+      piMaker_theme+
+      scale_colour_manual( values = group.colours) 
+    #plot(gpw)
+    
+    fig <- ggarrange(gz +rremove("xlab") +rremove("x.text"),  gp +rremove("xlab") +rremove("x.text"), go  ,gpw, nrow = 2, ncol = 2 )
+    annotate_figure(fig, top = text_grob(paste0(namd), 
+                                         color = "darkslategrey", face = "bold", size = 14))
+    plot(fig)
+    saveImage(paste0(namd))
+  }
+}
 #FIN
 
- 
-
-   
 #make piRNA position matrix for each sample 
 if(exists("piMatrixIndividual")){rm(piMatrixIndividual, piCountInd)}
 for (i in 1:(length(piList))) { 
@@ -1080,7 +981,7 @@ for (i in 1:(length(piList))) {
         piTally_List_Individual[[namB]] <- result
         rm(result)
       }else{
-        colnames(result_Ind) <- c("pos", c(24:29))
+        piTally_List_Individual <- list()
         piTally_List_Individual[[namB]] <- result
         rm(result)
       }
@@ -1289,7 +1190,7 @@ for (i in 1:length(BAMList)){
       xlab("Overlap (nt)")+
       theme(legend.position="none")+
       guides(colour = "none")+
-      scale_colour_manual(values=group.colors)+
+      scale_colour_manual(values=group.colours)+
       #theme(aspect.ratio = 0.25:1)+
       piMaker_theme
     #plot(gz)
@@ -1303,8 +1204,8 @@ for (i in 1:length(BAMList)){
       guides(colour = FALSE)+
       piMaker_theme+
       theme(legend.position="none")+
-      #scale_colour_manual(values=group.colors)
-      scale_fill_manual(values = group.colors)
+      #scale_colour_manual(values=group.colours)
+      scale_fill_manual(values = group.colours)
     #plot(go)
     
     gp <- ggplot(data = dat, aes(x = x))+
@@ -1319,7 +1220,7 @@ for (i in 1:length(BAMList)){
       guides(colour = FALSE)+
       #theme(aspect.ratio = 0.25:1)+
       piMaker_theme+
-      scale_colour_manual( values = group.colors) 
+      scale_colour_manual( values = group.colours) 
     #plot(gp)
     
     gpw <- ggplot(data = dat, aes(x = x))+
@@ -1334,7 +1235,7 @@ for (i in 1:length(BAMList)){
       guides(colour = FALSE)+
       #theme(aspect.ratio = 0.25:1)+
       piMaker_theme+
-      scale_colour_manual( values = group.colors) 
+      scale_colour_manual( values = group.colours) 
     #plot(gpw)
     
     fig <- ggarrange(gz +rremove("xlab") +rremove("x.text"),  gp +rremove("xlab") +rremove("x.text"), go  ,gpw, nrow = 2, ncol = 2 )
@@ -1363,7 +1264,7 @@ for (i in 1:length(BAMList)){
       xlab("Overlap (nt)")+
       theme(legend.position="none")+
       guides(colour = "none")+
-      scale_colour_manual(values=group.colors)+
+      scale_colour_manual(values=group.colours)+
       #theme(aspect.ratio = 0.25:1)+
       piMaker_theme
     #plot(gz)
@@ -1377,8 +1278,8 @@ for (i in 1:length(BAMList)){
       guides(colour = FALSE)+
       piMaker_theme+
       theme(legend.position="none")+
-      #scale_colour_manual(values=group.colors)
-      scale_fill_manual(values = group.colors)
+      #scale_colour_manual(values=group.colours)
+      scale_fill_manual(values = group.colours)
     #plot(go)
     
     gp <- ggplot(data = dat, aes(x = x))+
@@ -1393,7 +1294,7 @@ for (i in 1:length(BAMList)){
       guides(colour = FALSE)+
       #theme(aspect.ratio = 0.25:1)+
       piMaker_theme+
-      scale_colour_manual( values = group.colors) 
+      scale_colour_manual( values = group.colours) 
     #plot(gp)
     
     gpw <- ggplot(data = dat, aes(x = x))+
@@ -1408,7 +1309,7 @@ for (i in 1:length(BAMList)){
       guides(colour = FALSE)+
       #theme(aspect.ratio = 0.25:1)+
       piMaker_theme+
-      scale_colour_manual( values = group.colors) 
+      scale_colour_manual( values = group.colours) 
     #plot(gpw)
     
     fig <- ggarrange(gz +rremove("xlab") +rremove("x.text"),  gp +rremove("xlab") +rremove("x.text"), go  ,gpw, nrow = 2, ncol = 2 )
@@ -1443,11 +1344,11 @@ for (i in 1:length(refSeq)){
     }
   res <- res[,-c(1,3,4,5)]
   ifelse( exists("piProMaxF"), 
-          piProMaxF <- rbind( piProMaxF, max(res[,c(18,22)]) ),
-          piProMaxF <- c( max(res[,c(18,22)]) ) )
+          piProMaxF <- rbind( piProMaxF, max(res[,c(18:25)]) ),
+          piProMaxF <- c( max(res[,c(18:25)]) ) )
   ifelse( exists("piProWeiMaxF"),
-          piProWeiMaxF <- rbind( piProWeiMaxF, max(res[,c(26,30)]) ),
-          piProWeiMaxF <- c( max(res[,c(26,30)]) )  )
+          piProWeiMaxF <- rbind( piProWeiMaxF, max(res[,c(26:33)]) ),
+          piProWeiMaxF <- c( max(res[,c(26:33)]) )  )
   if(exists("pi_Final_Plot")){
     pi_Final_Plot[[nama]] <- res
     rm(res)
@@ -1482,11 +1383,11 @@ for (i in 1:length(refSeq)){
   }
   res <- res[,-c(1,3,4,5)]
   ifelse( exists("siProMaxF"), 
-          siProMaxF <- rbind( siProMaxF, max(res[,c(18,22)]) ),
-          siProMaxF <- c( max(res[,c(18,22)]) ) )
+          siProMaxF <- rbind( siProMaxF, max(res[,c(18:25)]) ),
+          siProMaxF <- c( max(res[,c(18:25)]) ) )
   ifelse( exists("siProWeiMaxF"),
-          siProWeiMaxF <- rbind( siProWeiMaxF, max(res[,c(26,30)]) ),
-          siProWeiMaxF <- c( max(res[,c(26,30)]) )  )
+          siProWeiMaxF <- rbind( siProWeiMaxF, max(res[,c(26:33)]) ),
+          siProWeiMaxF <- c( max(res[,c(26:33)]) )  )
   if(exists("si_Final_Plot")){
     si_Final_Plot[[nama]] <- res
     rm(res)
@@ -1496,7 +1397,7 @@ for (i in 1:length(refSeq)){
     rm(res)
   }
 }
-#get the data for the final bar plots, error bars must be done separate unfortunately of ggplot does not like it
+#get the data for the final bar plots, error bars must be done separate unfortunately
 if(exists("pi_barplot_Fin")){rm(pi_barplot_Fin, barMaxFin)}
 for (i in 1:length(pi_Final_Plot)){
   namp <- names(pi_Final_Plot[i])
@@ -1553,23 +1454,23 @@ for(r in 1:length(refSeq)){
     Rnam <- refSeq[r]
     dat <- pi_Final_Plot [[grep(paste0(Rnam ), names(pi_Final_Plot))]]
     datb <- pi_barplot_Fin [[grep(paste0(Rnam ), names(pi_barplot_Fin))]]
-    namd <- paste0(namfile, "_", Rnam, "_pi")
+    namd <- paste0(Rnam, "_pi")
     
     gz <- ggplot(data = dat, aes(x = x_Mean))+
       geom_line(aes(y = Pos_Z_Mean, colour = "Pos" ), linewidth = 0.75 )+
       geom_ribbon(aes(x = x_Mean, ymin = Pos_Z_SD_Minus, 
                       ymax = Pos_Z_SD_Plus, colour = "Pos" ), 
-                  fill = group.colors["Pos"], 
+                  fill = group.colours["Pos"], 
                   alpha = 0.25, linewidth = 0)+
       geom_line(aes(y = Neg_Z_Mean, colour = "Neg"), linewidth = 0.75 )+
       geom_ribbon(aes(x = x_Mean, ymin = Neg_Z_SD_Minus, 
                       ymax = Neg_Z_SD_Plus, colour = "Neg" ), 
-                  fill = group.colors["Neg"], 
+                  fill = group.colours["Neg"], 
                   alpha = 0.25, linewidth = 0)+
       geom_line(aes(y = Z_Score_Mean, colour = "Overall"),  linewidth = 1 )+
       geom_ribbon(aes(x = x_Mean, ymin = Z_Score_SD_Minus, 
                       ymax = Z_Score_SD_Plus, colour = "Overall" ), 
-                  fill = group.colors["Overall"], 
+                  fill = group.colours["Overall"], 
                   alpha = 0.25, linewidth = 0)+
       #ggtitle(paste0(namd))+
       ylim(-5,5)+
@@ -1577,8 +1478,8 @@ for(r in 1:length(refSeq)){
       xlab("Overlap (nt)")+
       theme(legend.position="none")+
       guides(colour = "none")+
-      scale_colour_manual(values=group.colors)+
-      scale_fill_manual(values=group.colors)+
+      scale_colour_manual(values=group.colours)+
+      scale_fill_manual(values=group.colours)+
       #theme(aspect.ratio = 0.25:1)+
       piMaker_theme
     #plot(gz)
@@ -1594,25 +1495,25 @@ for(r in 1:length(refSeq)){
       guides(colour = FALSE)+
       piMaker_theme+
       theme(legend.position="none")+
-      #scale_colour_manual(values=group.colors)
-      scale_fill_manual(values = group.colors)
+      #scale_colour_manual(values=group.colours)
+      scale_fill_manual(values = group.colours)
     #plot(go)
     
     gp <- ggplot(data = dat, aes(x = x_Mean))+
       geom_line(aes(y = Pos_probability_Mean, colour = "Pos"), linewidth = 0.75 )+
       geom_ribbon(aes(x = x_Mean, ymin = Pos_probability_SD_Minus, 
                       ymax = Pos_probability_SD_Plus, colour = "Pos" ), 
-                  fill = group.colors["Pos"], 
+                  fill = group.colours["Pos"], 
                   alpha = 0.25, linewidth = 0)+
       geom_line(aes(y = Neg_probability_Mean, colour = "Neg"), linewidth = 0.75 )+
       geom_ribbon(aes(x = x_Mean, ymin = Neg_probability_SD_Minus, 
                       ymax = Neg_probability_SD_Plus, colour = "Neg" ), 
-                  fill = group.colors["Neg"], 
+                  fill = group.colours["Neg"], 
                   alpha = 0.25, linewidth = 0)+
       geom_line(aes(y = Probability_Mean, colour = "Overall"), linewidth = 1 )+
       geom_ribbon(aes(x = x_Mean, ymin = Probability_SD_Minus, 
                       ymax = Probability_SD_Plus, colour = "Overall" ), 
-                  fill = group.colors["Overall"], 
+                  fill = group.colours["Overall"], 
                   alpha = 0.25, linewidth = 0)+
       #ggtitle(paste0(namd))+
       ylim(0, (max(piProMaxF)*1.1))+
@@ -1622,24 +1523,24 @@ for(r in 1:length(refSeq)){
       guides(colour = FALSE)+
       #theme(aspect.ratio = 0.25:1)+
       piMaker_theme+
-      scale_colour_manual( values = group.colors) 
+      scale_colour_manual( values = group.colours) 
     #plot(gp)
     
     gpw <- ggplot(data = dat, aes(x = x_Mean))+
       geom_line(aes(y = Pos_weighted_probability_Mean, colour = "Pos"), linewidth = 0.75 )+
       geom_ribbon(aes(x = x_Mean, ymin = Pos_weighted_probability_SD_Minus, 
                       ymax = Pos_weighted_probability_SD_Plus, colour = "Pos" ), 
-                  fill = group.colors["Pos"], 
+                  fill = group.colours["Pos"], 
                   alpha = 0.25, linewidth = 0)+
       geom_line(aes(y = Neg_weighted_probability_Mean, colour = "Neg"), linewidth = 0.75 )+
       geom_ribbon(aes(x = x_Mean, ymin = Neg_weighted_probability_SD_Minus, 
                       ymax = Neg_weighted_probability_SD_Plus, colour = "Pos" ), 
-                  fill = group.colors["Neg"], 
+                  fill = group.colours["Neg"], 
                   alpha = 0.25, linewidth = 0)+
       geom_line(aes(y = Weighted_Probability_Mean, colour = "Overall"), linewidth = 1 )+
       geom_ribbon(aes(x = x_Mean, ymin = Weighted_Probability_SD_Minus, 
                       ymax = Weighted_Probability_SD_Plus, colour = "Overall" ), 
-                  fill = group.colors["Overall"], 
+                  fill = group.colours["Overall"], 
                   alpha = 0.25, linewidth = 0)+
       #ggtitle(paste0(namd))+
       ylim(0, (max(piProWeiMaxF)*1.1))+
@@ -1649,13 +1550,13 @@ for(r in 1:length(refSeq)){
       guides(colour = FALSE)+
       #theme(aspect.ratio = 0.25:1)+
       piMaker_theme+
-      scale_colour_manual( values = group.colors) 
+      scale_colour_manual( values = group.colours) 
     #plot(gpw)
     
-    fig <- ggarrange(gz +rremove("xlab") +rremove("x.text"),  gp +rremove("xlab") +rremove("x.text"), go  ,gpw, nrow = 2, ncol = 2 )
+    fig <- ggarrange(gz +rremove("xlab") +rremove("x.text"),  gp +rremove("xlab") +rremove("x.text"), go  ,gpw, nrow = 2, ncol = 2, align = "hv" )
     annotate_figure(fig, top = text_grob(paste0(namd), 
                                          color = "darkslategrey", face = "bold", size = 14))
-    plot(fig)
+    #plot(fig)
     saveImage(paste0(namd))
 }
 #plot the final si data
@@ -1663,23 +1564,23 @@ for(r in 1:length(refSeq)){
   Rnam <- refSeq[r]
   dat <- si_Final_Plot [[grep(paste0(Rnam ), names(si_Final_Plot))]]
   datb <- si_barplot_Fin [[grep(paste0(Rnam ), names(si_barplot_Fin))]]
-  namd <- paste0(namfile, "_", Rnam, "_si")
+  namd <- paste0(Rnam, "_si")
   
   gz <- ggplot(data = dat, aes(x = x_Mean))+
     geom_line(aes(y = Pos_Z_Mean, colour = "Pos" ), linewidth = 0.75 )+
     geom_ribbon(aes(x = x_Mean, ymin = Pos_Z_SD_Minus, 
                     ymax = Pos_Z_SD_Plus, colour = "Pos" ), 
-                fill = group.colors["Pos"], 
+                fill = group.colours["Pos"], 
                 alpha = 0.25, linewidth = 0)+
     geom_line(aes(y = Neg_Z_Mean, colour = "Neg"), linewidth = 0.75 )+
     geom_ribbon(aes(x = x_Mean, ymin = Neg_Z_SD_Minus, 
                     ymax = Neg_Z_SD_Plus, colour = "Neg" ), 
-                fill = group.colors["Neg"], 
+                fill = group.colours["Neg"], 
                 alpha = 0.25, linewidth = 0)+
     geom_line(aes(y = Z_Score_Mean, colour = "Overall"),  linewidth = 1 )+
     geom_ribbon(aes(x = x_Mean, ymin = Z_Score_SD_Minus, 
                     ymax = Z_Score_SD_Plus, colour = "Overall" ), 
-                fill = group.colors["Overall"], 
+                fill = group.colours["Overall"], 
                 alpha = 0.25, linewidth = 0)+
     #ggtitle(paste0(namd))+
     ylim(-5,5)+
@@ -1687,8 +1588,8 @@ for(r in 1:length(refSeq)){
     xlab("Overlap (nt)")+
     theme(legend.position="none")+
     guides(colour = "none")+
-    scale_colour_manual(values=group.colors)+
-    scale_fill_manual(values=group.colors)+
+    scale_colour_manual(values=group.colours)+
+    scale_fill_manual(values=group.colours)+
     #theme(aspect.ratio = 0.25:1)+
     piMaker_theme
   #plot(gz)
@@ -1704,25 +1605,25 @@ for(r in 1:length(refSeq)){
     guides(colour = FALSE)+
     piMaker_theme+
     theme(legend.position="none")+
-    #scale_colour_manual(values=group.colors)
-    scale_fill_manual(values = group.colors)
+    #scale_colour_manual(values=group.colours)
+    scale_fill_manual(values = group.colours)
   #plot(go)
   
   gp <- ggplot(data = dat, aes(x = x_Mean))+
     geom_line(aes(y = Pos_probability_Mean, colour = "Pos"), linewidth = 0.75 )+
     geom_ribbon(aes(x = x_Mean, ymin = Pos_probability_SD_Minus, 
                     ymax = Pos_probability_SD_Plus, colour = "Pos" ), 
-                fill = group.colors["Pos"], 
+                fill = group.colours["Pos"], 
                 alpha = 0.25, linewidth = 0)+
     geom_line(aes(y = Neg_probability_Mean, colour = "Neg"), linewidth = 0.75 )+
     geom_ribbon(aes(x = x_Mean, ymin = Neg_probability_SD_Minus, 
                     ymax = Neg_probability_SD_Plus, colour = "Neg" ), 
-                fill = group.colors["Neg"], 
+                fill = group.colours["Neg"], 
                 alpha = 0.25, linewidth = 0)+
     geom_line(aes(y = Probability_Mean, colour = "Overall"), linewidth = 1 )+
     geom_ribbon(aes(x = x_Mean, ymin = Probability_SD_Minus, 
                     ymax = Probability_SD_Plus, colour = "Overall" ), 
-                fill = group.colors["Overall"], 
+                fill = group.colours["Overall"], 
                 alpha = 0.25, linewidth = 0)+
     #ggtitle(paste0(namd))+
     ylim(0, (max(siProMaxF)*1.1))+
@@ -1732,24 +1633,24 @@ for(r in 1:length(refSeq)){
     guides(colour = FALSE)+
     #theme(aspect.ratio = 0.25:1)+
     piMaker_theme+
-    scale_colour_manual( values = group.colors) 
+    scale_colour_manual( values = group.colours) 
  #plot(gp)
   
   gpw <- ggplot(data = dat, aes(x = x_Mean))+
     geom_line(aes(y = Pos_weighted_probability_Mean, colour = "Pos"), linewidth = 0.75 )+
     geom_ribbon(aes(x = x_Mean, ymin = Pos_weighted_probability_SD_Minus, 
                     ymax = Pos_weighted_probability_SD_Plus, colour = "Pos" ), 
-                fill = group.colors["Pos"], 
+                fill = group.colours["Pos"], 
                 alpha = 0.25, linewidth = 0)+
     geom_line(aes(y = Neg_weighted_probability_Mean, colour = "Neg"), linewidth = 0.75 )+
     geom_ribbon(aes(x = x_Mean, ymin = Neg_weighted_probability_SD_Minus, 
                     ymax = Neg_weighted_probability_SD_Plus, colour = "Pos" ), 
-                fill = group.colors["Neg"], 
+                fill = group.colours["Neg"], 
                 alpha = 0.25, linewidth = 0)+
     geom_line(aes(y = Weighted_Probability_Mean, colour = "Overall"), linewidth = 1 )+
     geom_ribbon(aes(x = x_Mean, ymin = Weighted_Probability_SD_Minus, 
                     ymax = Weighted_Probability_SD_Plus, colour = "Overall" ), 
-                fill = group.colors["Overall"], 
+                fill = group.colours["Overall"], 
                 alpha = 0.25, linewidth = 0)+
     #ggtitle(paste0(namd))+
     ylim(0, (max(siProWeiMaxF)*1.1))+
@@ -1759,13 +1660,13 @@ for(r in 1:length(refSeq)){
     guides(colour = FALSE)+
     #theme(aspect.ratio = 0.25:1)+
     piMaker_theme+
-    scale_colour_manual( values = group.colors) 
+    scale_colour_manual( values = group.colours) 
   #plot(gpw)
   
-  fig <- ggarrange(gz +rremove("xlab") +rremove("x.text"),  gp +rremove("xlab") +rremove("x.text"), go  ,gpw, nrow = 2, ncol = 2 )
+  fig <- ggarrange(gz +rremove("xlab") +rremove("x.text"),  gp +rremove("xlab") +rremove("x.text"), go  ,gpw, nrow = 2, ncol = 2, align = "hv" )
   annotate_figure(fig, top = text_grob(paste0(namd), 
                                        color = "darkslategrey", face = "bold", size = 14))
-  plot(fig)
+  #plot(fig)
   saveImage(paste0(namd))
 }
 
