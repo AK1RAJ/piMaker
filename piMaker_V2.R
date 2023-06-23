@@ -154,7 +154,7 @@ plot(gg)
 saveImage(paste(namefile))
 }
 }
-#split the data in the 21nt siRNAs 
+#split the data in the 21nt siRNAs and get the coverage
 if(exists("siRNA_Coverage_Plot")){rm(siRNA_Coverage_Plot, CovCount)}
 for (i in 1:length(BAMList)){
   filename <- names(BAMList[i])
@@ -265,7 +265,7 @@ for(i in 1:length(siRNA_Summary)){
   filename <- names(siRNA_Summary[i])
   data <- siRNA_Summary[[i]]
   gg<- ggplot(data)+
-    geom_ribbon(aes(x = x, ymin = Pos_E_min, ymax = Pos_E_max), , colour = group.colours["Pos"],
+    geom_ribbon(aes(x = x, ymin = Pos_E_min, ymax = Pos_E_max), colour = group.colours["Pos"],
                 fill = group.colours["Pos"], alpha = 0.5, linewidth = NULL)+
     geom_line(aes(x = x, y = Pos_Mean),colour = group.colours["Pos"], linewidth = 1)+
     geom_ribbon(aes(x = x, ymin = Neg_E_min, ymax = Neg_E_max), colour = group.colours["Neg"],
@@ -291,7 +291,7 @@ DNA_col_scheme =  make_col_scheme(chars=c('A', 'U', 'G', 'C'), groups= NULL,
 
 Sizes <- c(24:29) #put in the piRNA sizes we are looking for here
 #21nt siRNAs are dealt with separately for overlap and z score calculations
-#make long frames of the sequences, first filter the data sets by size i=1
+#make long frames of the sequences, first filter the data sets by read length to reduce computing requirements
 if(exists("piList")){rm(piList)}+
 if(exists("siList")){rm(siList)}
 for (i in 1:length(samples)) {
@@ -320,6 +320,7 @@ for (i in 1:length(samples)) {
   }   
   rm(data,datl,datp,dats,namp,nams)
 }
+#This section deals with all the reads combined - 'overall data', if you want individual plots and mean/SD data, go to the next section!####
 #now combine into single sets for each sample for the piRNAs
 if(exists("piSeqList")){rm(piSeqList)}
 for (i in 1:length(samples)) {
@@ -442,7 +443,7 @@ for (i in 1: length(siMatrix)){
   plot(gg)
   saveImage(paste0(filename))
 }
-#now split the lists into respective piRNAs 
+#now split the lists into respective piRNAs and plot, this will show if any sizes have the characteristic A/U overlap
 if(exists("piRNA_List")){rm(piRNA_List)}
 for (i in 1:(length(piSeqList))) {
   namfile <- names(piSeqList[i])
@@ -489,7 +490,7 @@ for (i in 1:(length(piSeqList))) {
 rm(data, datj, datjNeg, datjPos, datsz, piPos, piNeg)
 } 
 #make the position matrix for the reads, counts how many of each read length at each position
-#this can take a while! rm(Count) s=1
+#this can take a while! 
 if(exists("piTally_List")){rm(piTally_List)}
 for (i in 1:(length(piSeqList))) {
   namfile <- names(piSeqList[i])
@@ -765,7 +766,6 @@ for (i in 1:length(si_Signatures)){
   }
   rm(datp,dat1,dat2, barMaxCount)
 }
-
 #and plot the piRNAs
 for (i in 1:length(samples)){
   namfile <- samples[i]
@@ -911,7 +911,7 @@ for (i in 1:length(samples)){
   }
 }
 #FIN
-
+#making individual data sets for each read####
 #make piRNA position matrix for each sample 
 if(exists("piMatrixIndividual")){rm(piMatrixIndividual, piCountInd)}
 for (i in 1:(length(piList))) { 
@@ -1051,7 +1051,7 @@ for (i in 1:length(samples)){
   }
   rm(smp,rSeq,namRP,namRN,namRS,datP,datN,datC,piTalMax)
 }
-#join the positive and negative reads into a single matrix for the siRNAs i=1
+#join the positive and negative reads into a single matrix for the siRNAs 
 if(exists("siTally_List_Matrix_Individual")){rm(siTally_List_Matrix_Individual, siMaxInd)}
 for (i in 1:length(samples)){
   smp <- samples[i]
@@ -1081,6 +1081,65 @@ for (i in 1:length(samples)){
   }
   rm(smp,rSeq,namRP,namRN,namRS,datP,datN,datC,siTalMax)
 }
+#map the piRNA overlaps for the individual samples -  including this as I haven't put it before!
+for(i in 1:length(piTally_List_Matrix_Individual)){
+  namfile <- names(piTally_List_Matrix_Individual[i])
+  dat <- piTally_List_Matrix_Individual[[i]]
+  nam <- paste0(namfile, "_2429")
+  dat_2429 <- dat
+  
+  for(n in 24:29){
+    dat_2429[paste0("Pos_",n, "_x")] <- as.numeric(ifelse( (dat_2429[(paste0("Pos_",n))] >0), 
+                                                           dat_2429$Pos_pos, NA ))
+    dat_2429[paste0("Pos_",n, "_xend")] <- dat_2429[paste0("Pos_",n, "_x")] + n
+    dat_2429[paste0("Neg_",n, "_x")] <- as.numeric(ifelse((dat_2429[(paste0("Neg_",n))] >0), 
+                                                          dat_2429$Neg_pos, NA))
+    dat_2429[paste0("Neg_",n, "_xend")] <- dat_2429[paste0("Neg_",n, "_x")] + n
+  }
+  
+  gg <- ggplot()+
+    geom_hline(yintercept = 0, linetype = "solid", colour = "grey")+
+    geom_rect(data = dat_2429, aes(ymin = 0, ymax = Pos_24, xmin = Pos_24_x,
+                                   xmax = Pos_24_xend, fill = "24"), colour = piRNA.colours["24"], alpha = 0.4)+
+    geom_rect(data = dat_2429, aes(ymin = 0, ymax = - Neg_24, xmin = Neg_24_x,
+                                   xmax = Neg_24_xend, fill = "24"), colour = piRNA.colours["24"], alpha = 0.4)+ 
+    
+    
+    geom_rect(data = dat_2429, aes(ymin = 0, ymax = Pos_25, xmin = Pos_25_x,
+                                   xmax = Pos_25_xend, fill = "25"), colour = piRNA.colours["25"],  alpha = 0.4)+
+    geom_rect(data = dat_2429, aes(ymin = 0, ymax = - Neg_25, xmin = Neg_25_x,
+                                   xmax = Neg_25_xend, fill = "25"), colour = piRNA.colours["25"],  alpha = 0.4)+
+    
+    
+    geom_rect(data = dat_2429, aes(ymin = 0, ymax = Pos_26, xmin = Pos_26_x,
+                                   xmax = Pos_26_xend, fill = "26"), colour = piRNA.colours["26"],  alpha = 0.4)+
+    geom_rect(data = dat_2429, aes(ymin = 0, ymax = - Neg_26, xmin = Neg_26_x,
+                                   xmax = Neg_26_xend, fill = "26"), colour = piRNA.colours["26"],  alpha = 0.4)+
+    
+    
+    geom_rect(data = dat_2429, aes(ymin = 0, ymax = Pos_27, xmin = Pos_27_x,
+                                   xmax = Pos_27_xend, fill = "27"), colour = piRNA.colours["27"],  alpha = 0.4)+
+    geom_rect(data = dat_2429, aes(ymin = 0, ymax = - Neg_27, xmin = Neg_27_x,
+                                   xmax = Neg_27_xend, fill = "27"), colour = piRNA.colours["27"],  alpha = 0.4)+
+    
+    
+    geom_rect(data = dat_2429, aes(ymin = 0, ymax = Pos_28, xmin = Pos_28_x,
+                                   xmax = Pos_28_xend, fill = "28"), colour = piRNA.colours["28"],  alpha = 0.4)+
+    geom_rect(data = dat_2429, aes(ymin = 0, ymax = - Neg_28, xmin = Neg_28_x,
+                                   xmax = Neg_28_xend, fill = "28"), colour = piRNA.colours["28"],  alpha = 0.4)+
+    
+    geom_rect(data = dat_2429, aes(ymin = 0, ymax = Pos_29, xmin = Pos_29_x,
+                                   xmax = Pos_25_xend, fill = "29"), colour = piRNA.colours["29"],  alpha = 0.4)+
+    geom_rect(data = dat_2429, aes(ymin = 0, ymax = - Neg_29, xmin = Neg_29_x,
+                                   xmax = Neg_25_xend, fill = "29"), colour = piRNA.colours["29"],  alpha = 0.4)+
+    ylim(-max(piMaxInd),max(piMaxInd))+
+    ggtitle(paste(nam))+
+    piMaker_theme+
+    scale_fill_manual("Size", values = c(piRNA.colours))
+  
+  plot(gg)
+  saveImage(paste0(nam))
+}    
 #run piCatcherDual for the pi
 for(i in 1:length(piTally_List_Matrix_Individual)){
   namp <- names(piTally_List_Matrix_Individual[i])
@@ -1319,6 +1378,7 @@ for (i in 1:length(BAMList)){
     saveImage(paste0(namd))
   }
 }
+#Summary data with mean and standard deviation####
 #making the summary and standard deviations for the pi
 if(exists("pi_Final_Plot")){rm(pi_Final_Plot, piProMaxF, piProWeiMaxF)}
 for (i in 1:length(refSeq)){
@@ -1349,6 +1409,7 @@ for (i in 1:length(refSeq)){
   ifelse( exists("piProWeiMaxF"),
           piProWeiMaxF <- rbind( piProWeiMaxF, max(res[,c(26:33)]) ),
           piProWeiMaxF <- c( max(res[,c(26:33)]) )  )
+  FinProbScalePi <- cbind(piProMaxF,piProWeiMaxF)
   if(exists("pi_Final_Plot")){
     pi_Final_Plot[[nama]] <- res
     rm(res)
@@ -1388,6 +1449,7 @@ for (i in 1:length(refSeq)){
   ifelse( exists("siProWeiMaxF"),
           siProWeiMaxF <- rbind( siProWeiMaxF, max(res[,c(26:33)]) ),
           siProWeiMaxF <- c( max(res[,c(26:33)]) )  )
+  FinProbScaleSi <- cbind(siProMaxF,siProWeiMaxF)
   if(exists("si_Final_Plot")){
     si_Final_Plot[[nama]] <- res
     rm(res)
@@ -1397,6 +1459,106 @@ for (i in 1:length(refSeq)){
     rm(res)
   }
 }
+#making summary mappings of the piRNA to better match the summary mapping of the siRNAs if needed 
+if(exists("pi_Final_Map_Plot")){rm(pi_Final_Map_Plot, piMapMaxF)}
+for (i in 1:length(refSeq)){
+  ref <- refSeq[i]
+  dat <- (piTally_List_Matrix_Individual[grepl(ref, names(piTally_List_Matrix_Individual))])
+  nama <- paste0(ref)
+  sz <- length(dat)
+  len <- ncol(dat[[1]])
+  res <- data.frame(c(1:nrow(dat[[1]])))
+  for (l in 1:len){
+    nam <- colnames(dat[[1]][l])
+    for(s in 1:sz){
+      resa <- dat[[s]][l]
+      ifelse(exists("resb"), resb <- cbind(resb, resa), resb <- resa)
+      if(s == sz){
+        res[paste0(nam, "_Mean")] <- rowMeans(resb)
+        res[paste0(nam, "_SD")] <- apply(resb,1,sd)
+        res[paste0(nam, "_SD_Plus")] <-  res[paste0(nam, "_Mean")] + res[paste0(nam, "_SD")]
+        res[paste0(nam, "_SD_Minus")] <-  res[paste0(nam, "_Mean")] - res[paste0(nam, "_SD")]
+        rm(resb)
+      }
+    }
+  }
+  res <- res[,-c(1,3:5,31:33)]
+  ifelse( exists("piMapMaxF"), 
+          piMapMaxF <- rbind( piMapMaxF, max(res[,c(2:25,27:50)]) ),
+          piMapMaxF <- c( max(res[,c(2:25,27:50)]) ) )
+  if(exists("pi_Final_Map_Plot")){
+    pi_Final_Map_Plot[[nama]] <- res
+    rm(res)
+  }else{
+    pi_Final_Map_Plot <- list()
+    pi_Final_Map_Plot[[nama]] <- res
+    rm(res)
+  }
+}
+#and map
+for(i in 1:length(pi_Final_Map_Plot)){
+  namfile <- names(pi_Final_Map_Plot[i])
+  dat <- pi_Final_Map_Plot[[i]]
+  nam <- paste0(namfile, "2429_Summary")
+  dat_2429 <- dat
+  
+  gg <- ggplot(data = dat_2429,)+
+    geom_hline(yintercept = 0, linetype = "solid", colour = "grey")+
+    
+    geom_ribbon(aes(x = Pos_pos_Mean, ymin = Pos_24_SD_Minus, ymax = Pos_24_SD_Plus,
+                                     fill = "24"), colour = piRNA.colours["24"], alpha = 0.4)+
+    geom_line(aes(x = Pos_pos_Mean, y = Pos_24_Mean, colour = "24"), colour = piRNA.colours["24"], alpha = 0.4)+ 
+    geom_ribbon(aes(x = Neg_pos_Mean, ymin = Neg_24_SD_Minus, ymax = Neg_24_SD_Plus,
+                    fill = "24"), colour = piRNA.colours["24"], alpha = 0.4)+
+    geom_line(aes(x = Neg_pos_Mean, y = Neg_24_Mean, colour = "24"), colour = piRNA.colours["24"], alpha = 0.4)+
+    
+    
+    geom_ribbon(aes(x = Pos_pos_Mean, ymin = Pos_25_SD_Minus, ymax = Pos_25_SD_Plus,
+                    fill = "25"), colour = piRNA.colours["25"], alpha = 0.4)+
+    geom_line(aes(x = Pos_pos_Mean, y = Pos_25_Mean, colour = "25"), colour = piRNA.colours["25"], alpha = 0.4)+ 
+    geom_ribbon(aes(x = Neg_pos_Mean, ymin = Neg_25_SD_Minus, ymax = Neg_25_SD_Plus,
+                    fill = "25"), colour = piRNA.colours["25"], alpha = 0.4)+
+    geom_line(aes(x = Neg_pos_Mean, y = Neg_25_Mean, colour = "25"), colour = piRNA.colours["25"], alpha = 0.4)+
+    
+    
+    geom_ribbon(aes(x = Pos_pos_Mean, ymin = Pos_26_SD_Minus, ymax = Pos_26_SD_Plus,
+                    fill = "26"), colour = piRNA.colours["26"], alpha = 0.4)+
+    geom_line(aes(x = Pos_pos_Mean, y = Pos_26_Mean, colour = "26"), colour = piRNA.colours["26"], alpha = 0.4)+ 
+    geom_ribbon(aes(x = Neg_pos_Mean, ymin = Neg_26_SD_Minus, ymax = Neg_26_SD_Plus,
+                    fill = "26"), colour = piRNA.colours["26"], alpha = 0.4)+
+    geom_line(aes(x = Neg_pos_Mean, y = Neg_26_Mean, colour = "26"), colour = piRNA.colours["26"], alpha = 0.4)+
+    
+    
+    geom_ribbon(aes(x = Pos_pos_Mean, ymin = Pos_27_SD_Minus, ymax = Pos_27_SD_Plus,
+                    fill = "27"), colour = piRNA.colours["27"], alpha = 0.4)+
+    geom_line(aes(x = Pos_pos_Mean, y = Pos_27_Mean, colour = "27"), colour = piRNA.colours["27"], alpha = 0.4)+ 
+    geom_ribbon(aes(x = Neg_pos_Mean, ymin = Neg_27_SD_Minus, ymax = Neg_27_SD_Plus,
+                    fill = "27"), colour = piRNA.colours["27"], alpha = 0.4)+
+    geom_line(aes(x = Neg_pos_Mean, y = Neg_27_Mean, colour = "27"), colour = piRNA.colours["27"], alpha = 0.4)+
+    
+    
+    geom_ribbon(aes(x = Pos_pos_Mean, ymin = Pos_28_SD_Minus, ymax = Pos_28_SD_Plus,
+                    fill = "28"), colour = piRNA.colours["28"], alpha = 0.4)+
+    geom_line(aes(x = Pos_pos_Mean, y = Pos_28_Mean, colour = "28"), colour = piRNA.colours["28"], alpha = 0.4)+ 
+    geom_ribbon(aes(x = Neg_pos_Mean, ymin = Neg_28_SD_Minus, ymax = Neg_28_SD_Plus,
+                    fill = "28"), colour = piRNA.colours["28"], alpha = 0.4)+
+    geom_line(aes(x = Neg_pos_Mean, y = Neg_28_Mean, colour = "28"), colour = piRNA.colours["28"], alpha = 0.4)+
+    
+    geom_ribbon(aes(x = Pos_pos_Mean, ymin = Pos_29_SD_Minus, ymax = Pos_29_SD_Plus,
+                    fill = "29"), colour = piRNA.colours["29"], alpha = 0.4)+
+    geom_line(aes(x = Pos_pos_Mean, y = Pos_29_Mean, colour = "29"), colour = piRNA.colours["29"], alpha = 0.4)+ 
+    geom_ribbon(aes(x = Neg_pos_Mean, ymin = Neg_29_SD_Minus, ymax = Neg_29_SD_Plus,
+                    fill = "29"), colour = piRNA.colours["29"], alpha = 0.4)+
+    geom_line(aes(x = Neg_pos_Mean, y = Neg_29_Mean, colour = "29"), colour = piRNA.colours["29"], alpha = 0.4)+
+    
+    ylim(-max(piMapMaxF),max(piMapMaxF))+
+    ggtitle(paste(nam))+
+    piMaker_theme+
+    scale_fill_manual("Size", values = c(piRNA.colours))
+  
+  plot(gg)
+  saveImage(paste0(nam))
+} 
 #get the data for the final bar plots, error bars must be done separate unfortunately
 if(exists("pi_barplot_Fin")){rm(pi_barplot_Fin, barMaxFin)}
 for (i in 1:length(pi_Final_Plot)){
@@ -1516,7 +1678,7 @@ for(r in 1:length(refSeq)){
                   fill = group.colours["Overall"], 
                   alpha = 0.25, linewidth = 0)+
       #ggtitle(paste0(namd))+
-      ylim(0, (max(piProMaxF)*1.1))+
+      ylim(0, (max(FinProbScalePi)*1.1))+
       ylab("Probability")+
       xlab("Overlap (nt)")+
       theme(legend.position="none")+
@@ -1543,7 +1705,7 @@ for(r in 1:length(refSeq)){
                   fill = group.colours["Overall"], 
                   alpha = 0.25, linewidth = 0)+
       #ggtitle(paste0(namd))+
-      ylim(0, (max(piProWeiMaxF)*1.1))+
+      ylim(0, (max(FinProbScalePi)*1.1))+
       ylab("Weighted probability")+
       xlab("Overlap (nt)")+
       theme(legend.position="none")+
@@ -1626,7 +1788,7 @@ for(r in 1:length(refSeq)){
                 fill = group.colours["Overall"], 
                 alpha = 0.25, linewidth = 0)+
     #ggtitle(paste0(namd))+
-    ylim(0, (max(siProMaxF)*1.1))+
+    ylim(0, (max(FinProbScaleSi)*1.1))+
     ylab("Probability")+
     xlab("Overlap (nt)")+
     theme(legend.position="none")+
@@ -1653,7 +1815,7 @@ for(r in 1:length(refSeq)){
                 fill = group.colours["Overall"], 
                 alpha = 0.25, linewidth = 0)+
     #ggtitle(paste0(namd))+
-    ylim(0, (max(siProWeiMaxF)*1.1))+
+    ylim(0, (max(FinProbScaleSi)*1.1))+
     ylab("Weighted probability")+
     xlab("Overlap (nt)")+
     theme(legend.position="none")+

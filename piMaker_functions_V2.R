@@ -174,7 +174,12 @@ Normalise <- function(x){
   ifelse(sign(data)>0, ((data - min(data))/(max(data) - min(data))), 
          -((abs(data) - (min(abs(data))))/(max(abs(data)) - min(abs(data)))))
 }
-
+#normalising data to a given max value
+NormaliseTo <- function(x, minvalue, maxvalue){
+  data <-x
+  ifelse(sign(data)>0, ((data - minvalue)/(maxvalue - minvalue)), 
+         -((abs(data) - (abs(minvalue)))/(abs(maxvalue) - abs(minvalue))))
+}
 
 overlapMatrixMake<- function(x, GenLength, Count){
   dat <- x
