@@ -22,10 +22,10 @@ countMatrix <- function(x, Count = parent.frame()$Count){
   var <- c(1:length(count))
   p[,1] <- c(0)
   
-  #count
+  #count 
   for(i in 1:length(count)){
     
-    var[i] <- sum(pat == count[i])
+    var[i] <- sum(pat == count[i], na.rm = T)
     
   }
   
@@ -50,6 +50,34 @@ coverMatrix <- function(x, Length){
     dat[paste0(n)] <- (x + i)
   }
   return(dat)
+}
+#this function builds a matrix for each input position of piRNAs, with each nucleotide covered by Length-1
+#the minus 1 is essential as the first covered position is always given by the 5' start position.
+coverPiMatrix <- function(x){
+  In. <- dat
+  #get the data from the list
+  #remove the unwanted bits
+  In <- In.[,c(4,6,5)]
+
+  res <- c()
+  
+  for(I in 1:nrow(In)){
+    p <- c()
+    Start <- In$pos[I]
+    Length <- In$qwidth[I]
+    
+    for (i in 1:(Length)) {
+      n = i
+
+      p[paste0(n)] <- (Start + i)
+    }
+    
+    res <- bind_rows(res,p)
+  }
+
+  In <- bind_cols(In,res)
+
+  return(In)
 }
 
 #read in files if multiple
@@ -79,9 +107,10 @@ filesIn <- function(files = NULL, tidyname = TRUE, what = c("qname", "rname", "s
 }
 
 #calculates the coverage of each nucleotide in the genome
-getCoverage <- function(x, Count = parent.frame()$Count){
+getCoverage <- function(x, GenSize){
   res <- x
-  Count = 1:(paste0(rsq))
+  Len = GenSize
+  Count <- Gensize
   #filter the positives
   datSP <- split(res,res$strand)
   datSP <- datSP[-3]
@@ -89,9 +118,9 @@ getCoverage <- function(x, Count = parent.frame()$Count){
   for(sp in 1:length(datSP)){
     dSP <- datSP[[sp]]
     if(names(datSP[sp]) == "+"){
-      tabP <- countMatrix(dSP, Count)
+      tabP <- countMatrix(dSP, Count = Len)
     }else{
-      tabN <- -countMatrix(dSP, Count) 
+      tabN <- -countMatrix(dSP, Count = Len) 
     }
   }
   tab <- bind_cols(tabP,tabN)
