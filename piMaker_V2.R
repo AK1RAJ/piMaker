@@ -18,7 +18,7 @@ source("https://raw.githubusercontent.com/AK1RAJ/piMaker/main/piMaker_functions_
 #test Bam files are at https://github.com/AK1RAJ/piMaker/tree/main/BAM
 #test reference sequences are at: https://github.com/AK1RAJ/piMaker/tree/main/refSeq
 
-savefiles = T #T/F option on whether to save the output plots or not
+savefiles = F #T/F option on whether to save the output plots or not
 
 #set working directory and get the files####
 #make a project folder with three subfolders for 1- the BAM files (BAM), 2- the reference sequences (refSeq)
@@ -57,7 +57,8 @@ files <- BamFileList((c(list.files(full.names = FALSE, #list of the BAM files
 #assign the samples here
 samples <- c("MOCK")
 
-#read in the files 
+#read in the files warning - do not have any variables in the environment called max, they will cause an error!
+#in case you need it: rm(max)
 if(exists("BAMList")){rm(BAMList, MaxCount)}
 for (i in 1:length(files)){
   namefile <- names(files[i])
@@ -76,19 +77,24 @@ for (i in 1:length(files)){
   rm(data)
 }
 #make size distributions 
-if(exists("SizeDistribution")){rm(SizeDistribution)}
+if(exists("SizeDistribution")){rm(SizeDistribution, NormaliseBy)}
 for (i in 1:length(BAMList)){
   filename <- names(BAMList[i])
   data <- (BAMList[[i]])
   nam <- paste0(filename, "_Size_Distribution")
   dsz <- getSize(data, Count = c(18:40))
+  NormFactor <- data.frame(sum(abs(dsz)))
+  row.names(NormFactor) <- filename
+  ifelse(exists("NormaliseBy"), 
+         NormaliseBy <- bind_rows(NormaliseBy, NormFactor),
+         NormaliseBy <- NormFactor)
       if(exists("SizeDistribution")){
         SizeDistribution[[nam]] <- dsz
       }else{
         SizeDistribution <- list()
         SizeDistribution[[nam]] <- dsz
         }
-  rm(data, dsz) 
+  rm(data, dsz, NormFactor) 
 }
 #plot size distributions
 for(i in 1:length(SizeDistribution)){
@@ -105,10 +111,10 @@ for(i in 1:length(SizeDistribution)){
     ggtitle(paste0(nam))+
     piMaker_theme
   plot(gg)
-  saveImage(paste0(nam))
+  #saveImage(paste0(nam))
 rm(nam,dat)
 }
-#make mean size distributions
+#make mean size distributions grouped by sample
 if(exists("Summary_Plot")){rm(Summary_Plot)}
 if(length(samples>1)){
 for(i in 1:length(samples)){
@@ -151,10 +157,90 @@ gg <- ggplot(data = data)+
   piMaker_theme+
   theme(legend.position = "none")
 plot(gg)
-saveImage(paste(namefile))
+#saveImage(paste(namefile))
 }
 }
-#split the data in the 21nt siRNAs and get the coverage
+#make size distributions grouped by genome segment 
+if(exists("GenSizeDistribution")){rm(GenSizeDistribution, NormaliseByGen)}
+for (i in 1:length(BAMList)){
+  filename <- names(BAMList[i])
+  data <- (BAMList[[i]])
+  dSP <- split(data,data$rname)
+  for(r in 1:length(dSP)){
+    dat <- dSP[[r]]
+    namfile <- names(dSP[r])
+    nam <- paste0(filename, "_", namfile, "_Size_Distribution")
+    dsz <- getSize(dat, Count = c(18:40))
+    NormFactor <- data.frame(sum(abs(dsz)))
+    row.names(NormFactor) <- namfile
+    ifelse(exists("NormaliseByGen"), 
+           NormaliseByGen <- bind_rows(NormaliseByGen, NormFactor),
+           NormaliseByGen <- NormFactor)
+    if(exists("GenSizeDistribution")){
+      GenSizeDistribution[[nam]] <- dsz
+    }else{
+      GenSizeDistribution <- list()
+      GenSizeDistribution[[nam]] <- dsz
+    }
+  }
+  rm(data, dsz, NormFactor) 
+}
+#make mean size distributions grouped by genome segment
+if(exists("GenSummary_Plot")){rm(GenSummary_Plot, GenMaxCount)}
+if(length(samples>1)){
+  for(i in 1:length(refSeq)){
+    namefile <- refSeq[i]
+    filename <- paste0(namefile, "_SizeDistSum")
+    data <- (GenSizeDistribution[ grepl((paste0(namefile)), names(GenSizeDistribution))])
+    res <- c()
+    for (i in 1:length(data)) {
+      nam <- names(data[i])
+      dat <- data.frame(t(data[[i]]))
+      colnames(dat) <- c(paste0(nam, "_Pos"), paste0(nam, "_Neg"))
+      ifelse(exists("res"),
+             res <- bind_cols(res, dat),
+             res <- dat)
+      maxC <- max(res)
+      ifelse(exists("GenMaxCount"), GenMaxCount <- rbind(GenMaxCount, maxC), GenMaxCount <- maxC)
+    }
+    res <- SizDistSum(res)
+    if(exists("GenSummary_Plot")){
+      GenSummary_Plot[[filename]] <- res
+      rm(res)
+    }else{
+      GenSummary_Plot <- list()
+      GenSummary_Plot[[filename]] <- res
+      rm(res)
+    }
+  }
+}
+#plot the means by genome segment 
+if(exists("GenSummary_Plot")){
+  for(i in 1:length(GenSummary_Plot)){
+    data <- GenSummary_Plot[[i]]
+    filename <- names(GenSummary_Plot[i])
+    gg <- ggplot(data = data)+
+      geom_col( aes(x = data$x, y = Pos_Mean), fill = group.colours["Pos"], linewidth=0.5, colour="black", alpha=0.9)+
+      geom_col( aes(x = data$x, y = Neg_Mean), fill = group.colours["Neg"],linewidth=0.5, colour="black", alpha=0.9)+
+      geom_errorbar( aes(x = data$x, ymin = Pos_E_Min, ymax = Pos_E_Max), linewidth=1, colour="black", alpha=0.9 )+
+      geom_errorbar( aes(x = data$x, ymin = Neg_E_Min, ymax = Neg_E_Max), linewidth=1, colour="black", alpha=0.9 )+
+      xlab ("Size")+
+      ylab ("Count")+
+      ylim (-(max(GenMaxCount)*1.1),(max(GenMaxCount)*1.1))+
+      ggtitle(paste0(filename))+
+      piMaker_theme+
+      theme(legend.position = "none")
+    plot(gg)
+    #saveImage(paste(filename))
+    if(exists("Final_Plots")){
+      Final_Plots[[filename]] <- gg
+    }else{
+      Final_Plots <- list()
+      Final_Plots[[filename]] <- gg
+    }
+  }
+}
+#split the data in the 21nt siRNAs and get the coverage 
 if(exists("siRNA_Coverage_Plot")){rm(siRNA_Coverage_Plot, CovCount)}
 for (i in 1:length(BAMList)){
   filename <- names(BAMList[i])
@@ -167,7 +253,7 @@ for (i in 1:length(BAMList)){
     namb <- paste0(names(BAMList[i]), "_", names(d21[n]))
     dat <- d21[[n]]
     datc <- coverMatrix(dat, Length = 21)
-    cov <- getCoverage(datc, Count = 1:(paste0(rsq))) 
+    cov <- getCoverage(datc, GenSize = 1:(paste0(rsq))) 
     covC <- c(maxCount(cov$Neg, cov$Pos))
     ifelse(exists("siCovCount"), siCovCount <- rbind(siCovCount, covC), siCovCount <- covC)
     if(exists("siRNA_Coverage_Plot")){
@@ -194,22 +280,27 @@ for (i in 1:(length(siRNA_Coverage_Plot))) {
     xlab ("nt position")+
     piMaker_theme
   plot(gg)
-  saveImage(paste(filename))
+  #saveImage(paste(filename))
   rm(cvr)
 }
 #normalise the data to take unequal read counts in account
+if(exists("siRNA_Coverage_Plot_Normalised")){rm(siRNA_Coverage_Plot_Normalised, NormScale)}
 for (i in 1:(length(siRNA_Coverage_Plot))){
-  filename = names(siRNA_Coverage_Plot[i])
-  data <- (siRNA_Coverage_Plot[[i]])
-  data$Pos_Normalised <- Normalise(data$Pos)
-  data$Neg_Normalised <- Normalise(data$Neg)
+  filename <- names(siRNA_Coverage_Plot[i])
+  nam <- str_extract(filename, '[A-Za-z]+_[0-9]')
+  NormTo <- NormaliseBy[grepl(nam, row.names(NormaliseBy)),]
+  data <- siRNA_Coverage_Plot[[i]]
+  data$Pos_Normalised <- NormaliseTo(data$Pos, 0, NormTo)
+  data$Neg_Normalised <- NormaliseTo(data$Neg, 0, NormTo)
+  NorScal <- max(data$Pos_Normalised, abs(data$Neg_Normalised))
+  ifelse(exists("NormScale"), NormScale <- rbind(NormScale, NorScal), NormScale <- NorScal)
   if (exists("siRNA_Coverage_Plot_Normalised")){
     siRNA_Coverage_Plot_Normalised[[filename]] <- data
   } else {
     siRNA_Coverage_Plot_Normalised <- list()
     siRNA_Coverage_Plot_Normalised[[filename]] <- data
   }
-  if(i == length(siRNA_Coverage_Plot)){rm(data)}
+rm(data, NormTo, NorScal)
 }
 #plot the normalised data
 for (i in 1:(length(siRNA_Coverage_Plot_Normalised))) { 
@@ -221,12 +312,12 @@ for (i in 1:(length(siRNA_Coverage_Plot_Normalised))) {
     geom_line(aes(x= x, y = Neg_Normalised), colour = group.colours["Neg"], linewidth = 0.5)+
     geom_hline(yintercept = 0, linetype = "solid", colour = "grey")+
     ggtitle(paste0(namefile))+
-    ylim(-1,1)+
+    ylim(-max(NormScale)*1.1, max(NormScale)*1.1)+
     xlab ("nt position")+
     ylab(NULL)+
     piMaker_theme
   plot(gg)
-  saveImage(paste(namefile))
+  #saveImage(paste(namefile))
 }
 #make summary data
 if(exists("siRNA_Summary")){rm(siRNA_Summary)}
@@ -262,26 +353,35 @@ rm(data,datRseq,datn)
 #plot summary data        
 if(exists("Summary_Plot")){
 for(i in 1:length(siRNA_Summary)){
-  filename <- names(siRNA_Summary[i])
+  name <- names(siRNA_Summary[i])
+  name <- str_extract(name, '(?<=_)[A-Z0-9]*')
+  filename <- paste0(name, "_siSummary")
   data <- siRNA_Summary[[i]]
   gg<- ggplot(data)+
     geom_ribbon(aes(x = x, ymin = Pos_E_min, ymax = Pos_E_max), colour = group.colours["Pos"],
-                fill = group.colours["Pos"], alpha = 0.5, linewidth = NULL)+
-    geom_line(aes(x = x, y = Pos_Mean),colour = group.colours["Pos"], linewidth = 1)+
+                fill = group.colours["Pos"], alpha = 0.2, linewidth = 0.1)+
+    geom_line(aes(x = x, y = Pos_Mean),colour = group.colours["Pos"], linewidth = 0.5)+
     geom_ribbon(aes(x = x, ymin = Neg_E_min, ymax = Neg_E_max), colour = group.colours["Neg"],
-                fill = group.colours["Neg"], alpha = 0.5, linewidth = NULL)+
-    geom_line(aes(x = x, y = Neg_Mean), colour = group.colours["Neg"], linewidth = 1)+
+                fill = group.colours["Neg"], alpha = 0.2, linewidth = 0.1)+
+    geom_line(aes(x = x, y = Neg_Mean), colour = group.colours["Neg"], linewidth = 0.5)+
     geom_hline(yintercept = 0, linetype = "solid", colour = "grey")+
     ggtitle(paste0(filename))+
-    ylim(-1,1)+
+    ylim(-max(NormScale), max(NormScale))+
     xlab ("nt position")+
     guides(guide_legend, fill = NULL)+
     piMaker_theme+
     theme(legend.position = "none")
   plot(gg)
-  saveImage(paste(filename))
+  #saveImage(paste(filename))
+  if(exists("Final_Plots")){
+    Final_Plots[[filename]] <- gg
+  }else{
+    Final_Plots <- list()
+    Final_Plots[[filename]] <- gg
+  }
 }        
 }
+
 #piRNAs####
 #load functions and colours
 #function to find overlaps in piRNAs 
@@ -405,6 +505,167 @@ for (i in 1:(length(siSeqList))) {
   }
   rm(data,datr,freq)
 }
+# get the coverage of the piRNA of size Sizes 
+if(exists("piRNA_Coverage_Plot")){rm(piRNA_Coverage_Plot, piCovCount)}
+for (i in 1:length(BAMList)){
+  filename <- names(BAMList[i])
+  data <- (BAMList[[i]])
+  dpiRNA <- dplyr::filter(data, data$qwidth %in% c(Sizes))
+  dpiRNA <- split(dpiRNA, dpiRNA$rname)
+  for (n in 1:length(dpiRNA)){
+    rSeq <- names(dpiRNA[n])
+    rsq <- makeRsq(rSeq)
+    namb <- paste0(names(BAMList[i]), "_", names(dpiRNA[n]))
+    dat <- dpiRNA[[n]]
+    datc <- coverPiMatrix(dat)
+    datc <- datc[,-2]
+    cov <- getCoverage(datc, GenSize = 1:paste(rsq)) 
+    covP <- c(maxCount(cov$Neg, cov$Pos))
+    ifelse(exists("piCovCount"), piCovCount <- rbind(piCovCount, covP), piCovCount <- covP)
+    if(exists("piRNA_Coverage_Plot")){
+      piRNA_Coverage_Plot[[namb]] <- cov
+      rm(cov)
+    }else{
+      piRNA_Coverage_Plot <- list()
+      piRNA_Coverage_Plot[[namb]] <- cov
+      rm(cov)
+    }
+  }
+  rm(data,dpiRNA,dat,namb,datc,covP)
+}
+#plot the coverage 
+for (i in 1:(length(piRNA_Coverage_Plot))) {
+  name <- names(piRNA_Coverage_Plot[i])
+  filename <- paste0(name, "_piCoverage")
+  cvr <- data.frame(piRNA_Coverage_Plot[[i]])
+  gg<- ggplot()+
+    geom_line(data = cvr, aes(x= x, y = Pos ), colour = group.colours["Pos"], linewidth = 0.5)+
+    geom_line(data = cvr, aes(x= x, y = Neg), colour = group.colours["Neg"], linewidth = 0.5)+
+    geom_hline(yintercept = 0, linetype = "solid", colour = "grey")+
+    ggtitle(paste0(filename))+
+    ylim(-(max(piCovCount)*1.1),(max(piCovCount)*1.1))+
+    xlab ("nt position")+
+    piMaker_theme
+  plot(gg)
+  #saveImage(paste(filename))
+  rm(cvr)
+}
+#normalise the data to take unequal read counts in account 
+if (exists("piRNA_Coverage_Plot_Normalised")){rm(piRNA_Coverage_Plot_Normalised)}
+for (i in 1:(length(piRNA_Coverage_Plot))){
+  filename = names(piRNA_Coverage_Plot[i])
+  nam <- str_extract(filename, '[A-Za-z]+_[0-9]')
+  NormTo <- NormaliseBy[grepl(nam, row.names(NormaliseBy)),]
+  data <- (piRNA_Coverage_Plot[[i]])
+  data$Pos_Normalised <- NormaliseTo(data$Pos, 0, NormTo)
+  data$Neg_Normalised <- NormaliseTo(data$Neg, 0, NormTo)
+  if (exists("piRNA_Coverage_Plot_Normalised")){
+    piRNA_Coverage_Plot_Normalised[[filename]] <- data
+  } else {
+    piRNA_Coverage_Plot_Normalised <- list()
+    piRNA_Coverage_Plot_Normalised[[filename]] <- data
+  }
+  rm(data)
+}
+#plot the normalised data
+for (i in 1:(length(piRNA_Coverage_Plot_Normalised))) { 
+  filename <- names(piRNA_Coverage_Plot_Normalised[i])
+  namefile <- (paste0(filename, "_pi_Normalised"))
+  data <- siRNA_Coverage_Plot_Normalised[[i]]
+  gg<- ggplot(data)+
+    geom_line(aes(x= x, y = Pos_Normalised), colour = group.colours["Pos"], linewidth = 0.5)+
+    geom_line(aes(x= x, y = Neg_Normalised), colour = group.colours["Neg"], linewidth = 0.5)+
+    geom_hline(yintercept = 0, linetype = "solid", colour = "grey")+
+    ggtitle(paste0(namefile))+
+    ylim(-max(NormScale)*1.1, max(NormScale)*1.1)+
+    xlab ("nt position")+
+    ylab(NULL)+
+    piMaker_theme
+  plot(gg)
+  #saveImage(paste(namefile))
+}
+#make summary data
+if(exists("piRNA_Summary")){rm(piRNA_Summary)}
+for (i in 1:length(samples)) {
+  namefile = samples[i]
+  data <- piRNA_Coverage_Plot_Normalised[grepl(namefile, names(piRNA_Coverage_Plot_Normalised))]
+  for (j in 1:length(refSeq)) {
+    rSeq <- refSeq[j]
+    datRseq <- data[grepl(rSeq, names(data))] %>% keep( ~ !is.null(.) ) 
+    for (n in 1:length(datRseq)) {
+      namen <- names(datRseq[n])
+      datn <- as.data.frame(datRseq [[n]] [,c("Pos_Normalised","Neg_Normalised")] ) 
+      colnames(datn) <- paste0(namen, "_", colnames(datn))
+      ifelse(exists("Sumry"), 
+             Sumry <- cbind(Sumry, datn),
+             Sumry <- (datn))
+    }
+    filename <- paste0(namefile, "_", rSeq)
+    Sumry <- meanCalc(Sumry)
+    Sumry <- Sumry[,grepl(("Mean|SD|min|max"), colnames(Sumry))]
+    Sumry$x <- as.numeric(row.names(Sumry))
+    if(exists("piRNA_Summary")){
+      piRNA_Summary[[filename]] <- Sumry
+      rm(Sumry)
+    }else{
+      piRNA_Summary <- list()
+      piRNA_Summary[[filename]] <- Sumry
+      rm(Sumry)
+    }
+  }
+  rm(data,datRseq,datn)
+}  
+#plot summary data        
+if(exists("Summary_Plot")){
+  for(i in 1:length(piRNA_Summary)){
+    name <- names(piRNA_Summary[i])
+    name <- str_extract(name, '(?<=_)[A-Z0-9]*')
+    filename <- paste0(name, "_piSummary")
+    data <- piRNA_Summary[[i]]
+    gg<- ggplot(data)+
+      geom_ribbon(aes(x = x, ymin = Pos_E_min, ymax = Pos_E_max), colour = group.colours["Pos"],
+                  fill = group.colours["Pos"], alpha = 0.2, linewidth = 0.1)+
+      geom_line(aes(x = x, y = Pos_Mean),colour = group.colours["Pos"], linewidth = 0.5)+
+      geom_ribbon(aes(x = x, ymin = Neg_E_min, ymax = Neg_E_max), colour = group.colours["Neg"],
+                  fill = group.colours["Neg"], alpha = 0.2, linewidth = 0.1)+
+      geom_line(aes(x = x, y = Neg_Mean), colour = group.colours["Neg"], linewidth = 0.5)+
+      geom_hline(yintercept = 0, linetype = "solid", colour = "grey")+
+      ggtitle(paste0(filename))+
+      ylim(-max(NormScale), max(NormScale))+
+      xlab ("nt position")+
+      guides(guide_legend, fill = NULL)+
+      piMaker_theme+
+      theme(legend.position = "none")
+    plot(gg)
+    #saveImage(paste(filename))
+    if(exists("Final_Plots")){
+      Final_Plots[[filename]] <- gg
+    }else{
+      Final_Plots <- list()
+      Final_Plots[[filename]] <- gg
+  }        
+ }
+}
+
+#this is the first analysis now complete - size distribution and coverage of siRNA and piRNA
+#make a plot of this data:
+
+TopLeft <- Final_Plots[["GQ342965_SizeDistSum"]]
+TopRight <- Final_Plots[["GQ342966_SizeDistSum"]]
+MidLeft <- Final_Plots[["GQ342965_siSummary"]]
+MidRight <- Final_Plots[["GQ342966_siSummary"]]
+BotLeft <- Final_Plots[["GQ342965_piSummary"]]
+BotRight <- Final_Plots[["GQ342966_piSummary"]]
+  
+CoverageSummary <- ggarrange(TopLeft +rremove("xlab") +rremove("x.text"),
+                 TopRight +rremove("xlab") +rremove("x.text") +rremove("ylab") +rremove("y.text"),
+                 MidLeft  +rremove("xlab") +rremove("x.text"),
+                 MidRight +rremove("xlab") +rremove("x.text") +rremove("ylab") +rremove("y.text"),
+                 BotLeft,
+                 BotRight +rremove("ylab") +rremove("y.text"),
+                 nrow = 3, ncol = 2, widths = 1, heights = 1, align = "hv" )
+plot(TopLeft)
+  
 #plot piRNA position matrix - we don't really need to do this for the siRNAs as this is covered previously!
 for (i in 1: length(piMatrix)){
   data <- piMatrix[[i]]
@@ -422,7 +683,7 @@ gg <- ggplot(data)+
   piMaker_theme+
   theme(legend.position = "none")
 plot(gg)
-saveImage(paste0(filename))
+#saveImage(paste0(filename))
 }
 #but the code is here anyway
 for (i in 1: length(siMatrix)){
@@ -441,7 +702,7 @@ for (i in 1: length(siMatrix)){
     piMaker_theme+
     theme(legend.position = "none")
   plot(gg)
-  saveImage(paste0(filename))
+  #saveImage(paste0(filename))
 }
 #now split the lists into respective piRNAs and plot, this will show if any sizes have the characteristic A/U overlap
 if(exists("piRNA_List")){rm(piRNA_List)}
@@ -484,7 +745,13 @@ for (i in 1:(length(piSeqList))) {
         piMaker_theme
       fig <- ggarrange(gp,gn, nrow = 2)
       plot(fig)
-      saveImage(paste0(namj))
+      #saveImage(paste0(namj))
+      if(exists("piSeq_Plots")){
+        piSeq_Plots[[namj]] <- fig
+      }else{
+        piSeq_Plots <- list()
+        piSeq_Plots[[namj]] <- fig
+      }
     }
   }
 rm(data, datj, datjNeg, datjPos, datsz, piPos, piNeg)
@@ -665,7 +932,7 @@ for(i in 1:length(piTally_List_Matrix)){
     scale_fill_manual("Size", values = c(piRNA.colours))
 
   plot(gg)
-  saveImage(paste0(nam))
+  #saveImage(paste0(nam))
 }    
 #make the overlap matrix
 Overlap <- c(1:21) #will count overlaps of this length
@@ -835,7 +1102,7 @@ for (i in 1:length(samples)){
       annotate_figure(fig, top = text_grob(paste0(namd), 
                                            color = "darkslategrey", face = "bold", size = 14))
       plot(fig)
-      saveImage(paste0(namd))
+      #saveImage(paste0(namd))
     }
 }
 #and the siRNAs
@@ -907,7 +1174,7 @@ for (i in 1:length(samples)){
     annotate_figure(fig, top = text_grob(paste0(namd), 
                                          color = "darkslategrey", face = "bold", size = 14))
     plot(fig)
-    saveImage(paste0(namd))
+    #saveImage(paste0(namd))
   }
 }
 #FIN
@@ -1301,7 +1568,7 @@ for (i in 1:length(BAMList)){
     annotate_figure(fig, top = text_grob(paste0(namd), 
                                          color = "darkslategrey", face = "bold", size = 14))
     plot(fig)
-    saveImage(paste0(namd))
+    #saveImage(paste0(namd))
   }
 }
 #and plot for si
@@ -1557,7 +1824,7 @@ for(i in 1:length(pi_Final_Map_Plot)){
     scale_fill_manual("Size", values = c(piRNA.colours))
   
   plot(gg)
-  saveImage(paste0(nam))
+ # saveImage(paste0(nam))
 } 
 #get the data for the final bar plots, error bars must be done separate unfortunately
 if(exists("pi_barplot_Fin")){rm(pi_barplot_Fin, barMaxFin)}
@@ -1719,7 +1986,7 @@ for(r in 1:length(refSeq)){
     annotate_figure(fig, top = text_grob(paste0(namd), 
                                          color = "darkslategrey", face = "bold", size = 14))
     #plot(fig)
-    saveImage(paste0(namd))
+    #saveImage(paste0(namd))
 }
 #plot the final si data
 for(r in 1:length(refSeq)){
