@@ -190,7 +190,7 @@ if(exists("GenSummary_Plot")){rm(GenSummary_Plot, GenMaxCount)}
 if(length(samples>1)){
   for(i in 1:length(refSeq)){
     namefile <- refSeq[i]
-    filename <- paste0(namefile, "_SizeDistSum")
+    filename <- paste0(namefile, "_Size_Distribution")
     data <- (GenSizeDistribution[ grepl((paste0(namefile)), names(GenSizeDistribution))])
     res <- c()
     for (i in 1:length(data)) {
@@ -232,12 +232,6 @@ if(exists("GenSummary_Plot")){
       theme(legend.position = "none")
     plot(gg)
     #saveImage(paste(filename))
-    if(exists("Final_Plots")){
-      Final_Plots[[filename]] <- gg
-    }else{
-      Final_Plots <- list()
-      Final_Plots[[filename]] <- gg
-    }
   }
 }
 #split the data in the 21nt siRNAs and get the coverage 
@@ -319,7 +313,7 @@ for (i in 1:(length(siRNA_Coverage_Plot_Normalised))) {
   plot(gg)
   #saveImage(paste(namefile))
 }
-#make summary data
+#make summary data 
 if(exists("siRNA_Summary")){rm(siRNA_Summary)}
 for (i in 1:length(samples)) {
   namefile = samples[i]
@@ -373,12 +367,6 @@ if(exists("Summary_Plot")){
       theme(legend.position = "none")
     plot(gg)
     #saveImage(paste(filename))
-    if(exists("Final_Plots")){
-      Final_Plots[[filename]] <- gg
-    }else{
-      Final_Plots <- list()
-      Final_Plots[[filename]] <- gg
-    }
   }        
 }
 
@@ -638,33 +626,14 @@ if(exists("Summary_Plot")){
       theme(legend.position = "none")
     plot(gg)
     #saveImage(paste(filename))
-    if(exists("Final_Plots")){
-      Final_Plots[[filename]] <- gg
-    }else{
-      Final_Plots <- list()
-      Final_Plots[[filename]] <- gg
-    }        
   }
 }
 
 #this is the first analysis now complete - size distribution and coverage of siRNA and piRNA
+#adjust this as necessary
 #make a plot of this data:
 
-TopLeft <- Final_Plots[["GQ342965_SizeDistSum"]]
-TopRight <- Final_Plots[["GQ342966_SizeDistSum"]]
-MidLeft <- Final_Plots[["GQ342965_siSummary"]]
-MidRight <- Final_Plots[["GQ342966_siSummary"]]
-BotLeft <- Final_Plots[["GQ342965_piSummary"]]
-BotRight <- Final_Plots[["GQ342966_piSummary"]]
-
-CoverageSummary <- ggarrange(TopLeft +rremove("xlab") +rremove("x.text"),
-                             TopRight +rremove("xlab") +rremove("x.text") +rremove("ylab") +rremove("y.text"),
-                             MidLeft  +rremove("xlab") +rremove("x.text"),
-                             MidRight +rremove("xlab") +rremove("x.text") +rremove("ylab") +rremove("y.text"),
-                             BotLeft,
-                             BotRight +rremove("ylab") +rremove("y.text"),
-                             nrow = 3, ncol = 2, widths = 1, heights = 1, align = "hv" )
-plot(TopLeft)
+finalPlot <- CoverageSummaryPlot(GenSummary_Plot,  siRNA_Summary, piRNA_Summary)
 
 #plot piRNA position matrix - we don't really need to do this for the siRNAs as this is covered previously!
 for (i in 1: length(piMatrix)){
@@ -746,12 +715,6 @@ for (i in 1:(length(piSeqList))) {
       fig <- ggarrange(gp,gn, nrow = 2)
       plot(fig)
       #saveImage(paste0(namj))
-      if(exists("piSeq_Plots")){
-        piSeq_Plots[[namj]] <- fig
-      }else{
-        piSeq_Plots <- list()
-        piSeq_Plots[[namj]] <- fig
-      }
     }
   }
   rm(data, datj, datjNeg, datjPos, datsz, piPos, piNeg)
@@ -1178,7 +1141,7 @@ for (i in 1:length(samples)){
   }
 }
 #FIN
-#making individual data sets for each read####
+#making individual data sets for each read to give final mean and SD plots####
 #make piRNA position matrix for each sample 
 if(exists("piMatrixIndividual")){rm(piMatrixIndividual, piCountInd)}
 for (i in 1:(length(piList))) { 
@@ -1405,7 +1368,7 @@ for(i in 1:length(piTally_List_Matrix_Individual)){
     scale_fill_manual("Size", values = c(piRNA.colours))
   
   plot(gg)
-  saveImage(paste0(nam))
+  #saveImage(paste0(nam))
 }    
 #run piCatcherDual for the pi
 for(i in 1:length(piTally_List_Matrix_Individual)){
@@ -1502,71 +1465,10 @@ for (i in 1:length(BAMList)){
   namfile <- names(BAMList[i])
   for(r in 1:length(refSeq)){
     Rnam <- refSeq[r]
-    dat <- pi_Signatures_Individual [[grep(paste0(namfile, "_", Rnam ), names(pi_Signatures_Individual))]]
-    datb <- pi_barplot_Ind [[grep(paste0(namfile, "_", Rnam ), names(pi_barplot_Ind))]]
+    Line <- pi_Signatures_Individual [[grep(paste0(namfile, "_", Rnam ), names(pi_Signatures_Individual))]]
+    Bar <- pi_barplot_Ind [[grep(paste0(namfile, "_", Rnam ), names(pi_barplot_Ind))]]
     namd <- paste0(namfile, "_", Rnam, "_pi")
-    
-    gz <- ggplot(data = dat, aes(x = x))+
-      geom_line(aes(y = Pos_Z, colour = "Pos"), linewidth = 0.75 )+
-      geom_line(aes(y = Neg_Z, colour = "Neg"), linewidth = 0.75 )+
-      geom_line(aes(y = Z_Score, colour = "Overall"),  linewidth = 1 )+
-      #ggtitle(paste0(namd))+
-      ylim(-5,5)+
-      ylab("Z-Score")+
-      xlab("Overlap (nt)")+
-      theme(legend.position="none")+
-      guides(colour = "none")+
-      scale_colour_manual(values=group.colours)+
-      #theme(aspect.ratio = 0.25:1)+
-      piMaker_theme
-    #plot(gz)
-    
-    go <- ggplot(data = datb, aes(x = x))+
-      geom_bar(stat = "identity", aes(y = Count, fill = Group, alpha = 0.5), colour = "darkslategrey",  linewidth = 0.75)+
-      #ggtitle(paste0(namd))+
-      ylim(0, (max(barMaxInd)+25))+
-      xlab("Overlap (nt)")+
-      ylab("No. of pairs")+
-      guides(colour = FALSE)+
-      piMaker_theme+
-      theme(legend.position="none")+
-      #scale_colour_manual(values=group.colours)
-      scale_fill_manual(values = group.colours)
-    #plot(go)
-    
-    gp <- ggplot(data = dat, aes(x = x))+
-      geom_line(aes(y = Pos_probability, colour = "Pos"), linewidth = 0.75 )+
-      geom_line(aes(y = Neg_probability, colour = "Neg"), linewidth = 0.75 )+
-      geom_line(aes(y = Probability, colour = "Overall"), linewidth = 1 )+
-      #ggtitle(paste0(namd))+
-      ylim(0, (max(siProMaxI)*1.1))+
-      ylab("Probability")+
-      xlab("Overlap (nt)")+
-      theme(legend.position="none")+
-      guides(colour = FALSE)+
-      #theme(aspect.ratio = 0.25:1)+
-      piMaker_theme+
-      scale_colour_manual( values = group.colours) 
-    #plot(gp)
-    
-    gpw <- ggplot(data = dat, aes(x = x))+
-      geom_line(aes(y = Pos_weighted_probability, colour = "Pos"), linewidth = 0.75 )+
-      geom_line(aes(y = Neg_weighted_probability, colour = "Neg"), linewidth = 0.75 )+
-      geom_line(aes(y = Weighted_Probability, colour = "Overall"), linewidth = 1 )+
-      #ggtitle(paste0(namd))+
-      ylim(0, (max(siProWeiMaxI)*1.1))+
-      ylab("Weighted probability")+
-      xlab("Overlap (nt)")+
-      theme(legend.position="none")+
-      guides(colour = FALSE)+
-      #theme(aspect.ratio = 0.25:1)+
-      piMaker_theme+
-      scale_colour_manual( values = group.colours) 
-    #plot(gpw)
-    
-    fig <- ggarrange(gz +rremove("xlab") +rremove("x.text"),  gp +rremove("xlab") +rremove("x.text"), go  ,gpw, nrow = 2, ncol = 2 )
-    annotate_figure(fig, top = text_grob(paste0(namd), 
-                                         color = "darkslategrey", face = "bold", size = 14))
+    fig <- MatrixPlot(Line, Bar, piProMaxI, piProWeiMaxI, barMaxInd)
     plot(fig)
     #saveImage(paste0(namd))
   }
@@ -1576,73 +1478,12 @@ for (i in 1:length(BAMList)){
   namfile <- names(BAMList[i])
   for(r in 1:length(refSeq)){
     Rnam <- refSeq[r]
-    dat <- si_Signatures_Individual [[grep(paste0(namfile, "_", Rnam ), names(pi_Signatures_Individual))]]
-    datb <- si_barplot_Ind [[grep(paste0(namfile, "_", Rnam ), names(pi_barplot_Ind))]]
+    Line <- si_Signatures_Individual [[grep(paste0(namfile, "_", Rnam ), names(pi_Signatures_Individual))]]
+    Bar <- si_barplot_Ind [[grep(paste0(namfile, "_", Rnam ), names(pi_barplot_Ind))]]
     namd <- paste0(namfile, "_", Rnam, "_pi")
-    
-    gz <- ggplot(data = dat, aes(x = x))+
-      geom_line(aes(y = Pos_Z, colour = "Pos"), linewidth = 0.75 )+
-      geom_line(aes(y = Neg_Z, colour = "Neg"), linewidth = 0.75 )+
-      geom_line(aes(y = Z_Score, colour = "Overall"),  linewidth = 1 )+
-      #ggtitle(paste0(namd))+
-      ylim(-5,5)+
-      ylab("Z-Score")+
-      xlab("Overlap (nt)")+
-      theme(legend.position="none")+
-      guides(colour = "none")+
-      scale_colour_manual(values=group.colours)+
-      #theme(aspect.ratio = 0.25:1)+
-      piMaker_theme
-    #plot(gz)
-    
-    go <- ggplot(data = datb, aes(x = x))+
-      geom_bar(stat = "identity", aes(y = Count, fill = Group, alpha = 0.5), colour = "darkslategrey",  linewidth = 0.75)+
-      #ggtitle(paste0(namd))+
-      ylim(0, (max(sarMaxInd)+25))+
-      xlab("Overlap (nt)")+
-      ylab("No. of pairs")+
-      guides(colour = FALSE)+
-      piMaker_theme+
-      theme(legend.position="none")+
-      #scale_colour_manual(values=group.colours)
-      scale_fill_manual(values = group.colours)
-    #plot(go)
-    
-    gp <- ggplot(data = dat, aes(x = x))+
-      geom_line(aes(y = Pos_probability, colour = "Pos"), linewidth = 0.75 )+
-      geom_line(aes(y = Neg_probability, colour = "Neg"), linewidth = 0.75 )+
-      geom_line(aes(y = Probability, colour = "Overall"), linewidth = 1 )+
-      #ggtitle(paste0(namd))+
-      ylim(0, (max(siProMaxI)*1.1))+
-      ylab("Probability")+
-      xlab("Overlap (nt)")+
-      theme(legend.position="none")+
-      guides(colour = FALSE)+
-      #theme(aspect.ratio = 0.25:1)+
-      piMaker_theme+
-      scale_colour_manual( values = group.colours) 
-    #plot(gp)
-    
-    gpw <- ggplot(data = dat, aes(x = x))+
-      geom_line(aes(y = Pos_weighted_probability, colour = "Pos"), linewidth = 0.75 )+
-      geom_line(aes(y = Neg_weighted_probability, colour = "Neg"), linewidth = 0.75 )+
-      geom_line(aes(y = Weighted_Probability, colour = "Overall"), linewidth = 1 )+
-      #ggtitle(paste0(namd))+
-      ylim(0, (max(siProWeiMaxI)*1.1))+
-      ylab("Weighted probability")+
-      xlab("Overlap (nt)")+
-      theme(legend.position="none")+
-      guides(colour = FALSE)+
-      #theme(aspect.ratio = 0.25:1)+
-      piMaker_theme+
-      scale_colour_manual( values = group.colours) 
-    #plot(gpw)
-    
-    fig <- ggarrange(gz +rremove("xlab") +rremove("x.text"),  gp +rremove("xlab") +rremove("x.text"), go  ,gpw, nrow = 2, ncol = 2 )
-    annotate_figure(fig, top = text_grob(paste0(namd), 
-                                         color = "darkslategrey", face = "bold", size = 14))
+    fig <- MatrixPlot(Line, Bar, siProMaxI, siProWeiMaxI, sarMaxInd)
     plot(fig)
-    saveImage(paste0(namd))
+    #saveImage(paste0(namd))
   }
 }
 #Summary data with mean and standard deviation####
@@ -1881,222 +1722,22 @@ for (i in 1:length(si_Final_Plot)){
 #plot the final pi data
 for(r in 1:length(refSeq)){
   Rnam <- refSeq[r]
-  dat <- pi_Final_Plot [[grep(paste0(Rnam ), names(pi_Final_Plot))]]
-  datb <- pi_barplot_Fin [[grep(paste0(Rnam ), names(pi_barplot_Fin))]]
-  namd <- paste0(Rnam, "_pi")
-  
-  gz <- ggplot(data = dat, aes(x = x_Mean))+
-    geom_line(aes(y = Pos_Z_Mean, colour = "Pos" ), linewidth = 0.75 )+
-    geom_ribbon(aes(x = x_Mean, ymin = Pos_Z_SD_Minus, 
-                    ymax = Pos_Z_SD_Plus, colour = "Pos" ), 
-                fill = group.colours["Pos"], 
-                alpha = 0.25, linewidth = 0)+
-    geom_line(aes(y = Neg_Z_Mean, colour = "Neg"), linewidth = 0.75 )+
-    geom_ribbon(aes(x = x_Mean, ymin = Neg_Z_SD_Minus, 
-                    ymax = Neg_Z_SD_Plus, colour = "Neg" ), 
-                fill = group.colours["Neg"], 
-                alpha = 0.25, linewidth = 0)+
-    geom_line(aes(y = Z_Score_Mean, colour = "Overall"),  linewidth = 1 )+
-    geom_ribbon(aes(x = x_Mean, ymin = Z_Score_SD_Minus, 
-                    ymax = Z_Score_SD_Plus, colour = "Overall" ), 
-                fill = group.colours["Overall"], 
-                alpha = 0.25, linewidth = 0)+
-    #ggtitle(paste0(namd))+
-    ylim(-5,5)+
-    ylab("Z-Score")+
-    xlab("Overlap (nt)")+
-    theme(legend.position="none")+
-    guides(colour = "none")+
-    scale_colour_manual(values=group.colours)+
-    scale_fill_manual(values=group.colours)+
-    #theme(aspect.ratio = 0.25:1)+
-    piMaker_theme
-  #plot(gz)
-  
-  go <- ggplot(data = datb, aes(x = x))+
-    geom_bar(stat = "identity", aes(y = Count, fill = Group, alpha = 0.5), colour = "darkslategrey",  linewidth = 0.75)+
-    geom_errorbar( aes(ymin = Cumulative - SD, ymax = Cumulative + SD), position = "identity", linewidth=0.5, colour="black", alpha=0.7 )+
-    #geom_errorbar( aes(x = data$x, ymin = data$Neg_E_Min, ymax = data$Neg_E_Max), linewidth=1, colour="black", alpha=0.9 )+
-    #ggtitle(paste0(namd))+
-    ylim(0, (max(barMaxFin)*1.1))+
-    xlab("Overlap (nt)")+
-    ylab("No. of pairs")+
-    guides(colour = FALSE)+
-    piMaker_theme+
-    theme(legend.position="none")+
-    #scale_colour_manual(values=group.colours)
-    scale_fill_manual(values = group.colours)
-  #plot(go)
-  
-  gp <- ggplot(data = dat, aes(x = x_Mean))+
-    geom_line(aes(y = Pos_probability_Mean, colour = "Pos"), linewidth = 0.75 )+
-    geom_ribbon(aes(x = x_Mean, ymin = Pos_probability_SD_Minus, 
-                    ymax = Pos_probability_SD_Plus, colour = "Pos" ), 
-                fill = group.colours["Pos"], 
-                alpha = 0.25, linewidth = 0)+
-    geom_line(aes(y = Neg_probability_Mean, colour = "Neg"), linewidth = 0.75 )+
-    geom_ribbon(aes(x = x_Mean, ymin = Neg_probability_SD_Minus, 
-                    ymax = Neg_probability_SD_Plus, colour = "Neg" ), 
-                fill = group.colours["Neg"], 
-                alpha = 0.25, linewidth = 0)+
-    geom_line(aes(y = Probability_Mean, colour = "Overall"), linewidth = 1 )+
-    geom_ribbon(aes(x = x_Mean, ymin = Probability_SD_Minus, 
-                    ymax = Probability_SD_Plus, colour = "Overall" ), 
-                fill = group.colours["Overall"], 
-                alpha = 0.25, linewidth = 0)+
-    #ggtitle(paste0(namd))+
-    ylim(0, (max(FinProbScalePi)*1.1))+
-    ylab("Probability")+
-    xlab("Overlap (nt)")+
-    theme(legend.position="none")+
-    guides(colour = FALSE)+
-    #theme(aspect.ratio = 0.25:1)+
-    piMaker_theme+
-    scale_colour_manual( values = group.colours) 
-  #plot(gp)
-  
-  gpw <- ggplot(data = dat, aes(x = x_Mean))+
-    geom_line(aes(y = Pos_weighted_probability_Mean, colour = "Pos"), linewidth = 0.75 )+
-    geom_ribbon(aes(x = x_Mean, ymin = Pos_weighted_probability_SD_Minus, 
-                    ymax = Pos_weighted_probability_SD_Plus, colour = "Pos" ), 
-                fill = group.colours["Pos"], 
-                alpha = 0.25, linewidth = 0)+
-    geom_line(aes(y = Neg_weighted_probability_Mean, colour = "Neg"), linewidth = 0.75 )+
-    geom_ribbon(aes(x = x_Mean, ymin = Neg_weighted_probability_SD_Minus, 
-                    ymax = Neg_weighted_probability_SD_Plus, colour = "Pos" ), 
-                fill = group.colours["Neg"], 
-                alpha = 0.25, linewidth = 0)+
-    geom_line(aes(y = Weighted_Probability_Mean, colour = "Overall"), linewidth = 1 )+
-    geom_ribbon(aes(x = x_Mean, ymin = Weighted_Probability_SD_Minus, 
-                    ymax = Weighted_Probability_SD_Plus, colour = "Overall" ), 
-                fill = group.colours["Overall"], 
-                alpha = 0.25, linewidth = 0)+
-    #ggtitle(paste0(namd))+
-    ylim(0, (max(FinProbScalePi)*1.1))+
-    ylab("Weighted probability")+
-    xlab("Overlap (nt)")+
-    theme(legend.position="none")+
-    guides(colour = FALSE)+
-    #theme(aspect.ratio = 0.25:1)+
-    piMaker_theme+
-    scale_colour_manual( values = group.colours) 
-  #plot(gpw)
-  
-  fig <- ggarrange(gz +rremove("xlab") +rremove("x.text"),  gp +rremove("xlab") +rremove("x.text"), go  ,gpw, nrow = 2, ncol = 2, align = "hv" )
-  annotate_figure(fig, top = text_grob(paste0(namd), 
-                                       color = "darkslategrey", face = "bold", size = 14))
-  #plot(fig)
+  Line <- pi_Final_Plot [[grep(paste0(Rnam ), names(pi_Final_Plot))]]
+  Bar <- pi_barplot_Fin [[grep(paste0(Rnam ), names(pi_barplot_Fin))]]
+  namd <- paste0(Rnam, "_piRNAs")
+  fig <- MatrixPlotSD(Line, Bar, FinProbScalePi, FinProbScalePi, barMaxFin)
+  plot(fig)
   #saveImage(paste0(namd))
 }
 #plot the final si data
 for(r in 1:length(refSeq)){
   Rnam <- refSeq[r]
-  dat <- si_Final_Plot [[grep(paste0(Rnam ), names(si_Final_Plot))]]
-  datb <- si_barplot_Fin [[grep(paste0(Rnam ), names(si_barplot_Fin))]]
-  namd <- paste0(Rnam, "_si")
-  
-  gz <- ggplot(data = dat, aes(x = x_Mean))+
-    geom_line(aes(y = Pos_Z_Mean, colour = "Pos" ), linewidth = 0.75 )+
-    geom_ribbon(aes(x = x_Mean, ymin = Pos_Z_SD_Minus, 
-                    ymax = Pos_Z_SD_Plus, colour = "Pos" ), 
-                fill = group.colours["Pos"], 
-                alpha = 0.25, linewidth = 0)+
-    geom_line(aes(y = Neg_Z_Mean, colour = "Neg"), linewidth = 0.75 )+
-    geom_ribbon(aes(x = x_Mean, ymin = Neg_Z_SD_Minus, 
-                    ymax = Neg_Z_SD_Plus, colour = "Neg" ), 
-                fill = group.colours["Neg"], 
-                alpha = 0.25, linewidth = 0)+
-    geom_line(aes(y = Z_Score_Mean, colour = "Overall"),  linewidth = 1 )+
-    geom_ribbon(aes(x = x_Mean, ymin = Z_Score_SD_Minus, 
-                    ymax = Z_Score_SD_Plus, colour = "Overall" ), 
-                fill = group.colours["Overall"], 
-                alpha = 0.25, linewidth = 0)+
-    #ggtitle(paste0(namd))+
-    ylim(-5,5)+
-    ylab("Z-Score")+
-    xlab("Overlap (nt)")+
-    theme(legend.position="none")+
-    guides(colour = "none")+
-    scale_colour_manual(values=group.colours)+
-    scale_fill_manual(values=group.colours)+
-    #theme(aspect.ratio = 0.25:1)+
-    piMaker_theme
-  #plot(gz)
-  
-  go <- ggplot(data = datb, aes(x = x))+
-    geom_bar(stat = "identity", aes(y = Count, fill = Group, alpha = 0.5), colour = "darkslategrey",  linewidth = 0.75)+
-    geom_errorbar( aes(ymin = Cumulative - SD, ymax = Cumulative + SD), position = "identity", linewidth=0.5, colour="black", alpha=0.7 )+
-    #geom_errorbar( aes(x = data$x, ymin = data$Neg_E_Min, ymax = data$Neg_E_Max), linewidth=1, colour="black", alpha=0.9 )+
-    #ggtitle(paste0(namd))+
-    ylim(0, (max(sarMaxFin)*1.1))+
-    xlab("Overlap (nt)")+
-    ylab("No. of pairs")+
-    guides(colour = FALSE)+
-    piMaker_theme+
-    theme(legend.position="none")+
-    #scale_colour_manual(values=group.colours)
-    scale_fill_manual(values = group.colours)
-  #plot(go)
-  
-  gp <- ggplot(data = dat, aes(x = x_Mean))+
-    geom_line(aes(y = Pos_probability_Mean, colour = "Pos"), linewidth = 0.75 )+
-    geom_ribbon(aes(x = x_Mean, ymin = Pos_probability_SD_Minus, 
-                    ymax = Pos_probability_SD_Plus, colour = "Pos" ), 
-                fill = group.colours["Pos"], 
-                alpha = 0.25, linewidth = 0)+
-    geom_line(aes(y = Neg_probability_Mean, colour = "Neg"), linewidth = 0.75 )+
-    geom_ribbon(aes(x = x_Mean, ymin = Neg_probability_SD_Minus, 
-                    ymax = Neg_probability_SD_Plus, colour = "Neg" ), 
-                fill = group.colours["Neg"], 
-                alpha = 0.25, linewidth = 0)+
-    geom_line(aes(y = Probability_Mean, colour = "Overall"), linewidth = 1 )+
-    geom_ribbon(aes(x = x_Mean, ymin = Probability_SD_Minus, 
-                    ymax = Probability_SD_Plus, colour = "Overall" ), 
-                fill = group.colours["Overall"], 
-                alpha = 0.25, linewidth = 0)+
-    #ggtitle(paste0(namd))+
-    ylim(0, (max(FinProbScaleSi)*1.1))+
-    ylab("Probability")+
-    xlab("Overlap (nt)")+
-    theme(legend.position="none")+
-    guides(colour = FALSE)+
-    #theme(aspect.ratio = 0.25:1)+
-    piMaker_theme+
-    scale_colour_manual( values = group.colours) 
-  #plot(gp)
-  
-  gpw <- ggplot(data = dat, aes(x = x_Mean))+
-    geom_line(aes(y = Pos_weighted_probability_Mean, colour = "Pos"), linewidth = 0.75 )+
-    geom_ribbon(aes(x = x_Mean, ymin = Pos_weighted_probability_SD_Minus, 
-                    ymax = Pos_weighted_probability_SD_Plus, colour = "Pos" ), 
-                fill = group.colours["Pos"], 
-                alpha = 0.25, linewidth = 0)+
-    geom_line(aes(y = Neg_weighted_probability_Mean, colour = "Neg"), linewidth = 0.75 )+
-    geom_ribbon(aes(x = x_Mean, ymin = Neg_weighted_probability_SD_Minus, 
-                    ymax = Neg_weighted_probability_SD_Plus, colour = "Pos" ), 
-                fill = group.colours["Neg"], 
-                alpha = 0.25, linewidth = 0)+
-    geom_line(aes(y = Weighted_Probability_Mean, colour = "Overall"), linewidth = 1 )+
-    geom_ribbon(aes(x = x_Mean, ymin = Weighted_Probability_SD_Minus, 
-                    ymax = Weighted_Probability_SD_Plus, colour = "Overall" ), 
-                fill = group.colours["Overall"], 
-                alpha = 0.25, linewidth = 0)+
-    #ggtitle(paste0(namd))+
-    ylim(0, (max(FinProbScaleSi)*1.1))+
-    ylab("Weighted probability")+
-    xlab("Overlap (nt)")+
-    theme(legend.position="none")+
-    guides(colour = FALSE)+
-    #theme(aspect.ratio = 0.25:1)+
-    piMaker_theme+
-    scale_colour_manual( values = group.colours) 
-  #plot(gpw)
-  
-  fig <- ggarrange(gz +rremove("xlab") +rremove("x.text"),  gp +rremove("xlab") +rremove("x.text"), go  ,gpw, nrow = 2, ncol = 2, align = "hv" )
-  annotate_figure(fig, top = text_grob(paste0(namd), 
-                                       color = "darkslategrey", face = "bold", size = 14))
-  #plot(fig)
-  saveImage(paste0(namd))
+  Line <- si_Final_Plot [[grep(paste0(Rnam ), names(si_Final_Plot))]]
+  Bar <- si_barplot_Fin [[grep(paste0(Rnam ), names(si_barplot_Fin))]]
+  namd <- paste0(Rnam, "_siRNAs")
+  fig <- MatrixPlotSD(Line, Bar, FinProbScaleSi, FinProbScaleSi, sarMaxFin)
+  plot(fig)
+  #saveImage(paste0(namd))
 }
 
 

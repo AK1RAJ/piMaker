@@ -726,3 +726,129 @@ makeTally <- function(x, Genome_Length, Target_Length){
   
   return(resultMakeTally)
 }
+
+CoverageSummaryPlot <- function(GenSummary_Plot,  siRNA_Summary, piRNA_Summary){
+  
+  filename <- "Final_Coverage_Summary_Plot"
+  
+  namTopLeft <- names(GenSummary_Plot[1])
+  datTopLeft <- GenSummary_Plot[[1]]
+  
+  namTopRight <- names(GenSummary_Plot[2])
+  datTopRight <- GenSummary_Plot[[2]]
+  
+  namMidLeft <- names(siRNA_Summary[1])
+  namMidLeft <- str_extract(namMidLeft, '(?<=_)[A-Z0-9]*')
+  datMidLeft <- siRNA_Summary[[1]]
+  
+  namMidRight <- names(siRNA_Summary[2])
+  namMidRight <- str_extract(namMidRight, '(?<=_)[A-Z0-9]*')
+  datMidRight <- siRNA_Summary[[2]]
+  
+  namBotLeft <- names(piRNA_Summary[1])
+  namBotLeft <- str_extract(namBotLeft, '(?<=_)[A-Z0-9]*')
+  datBotLeft <- piRNA_Summary[[1]]
+  
+  namBotRight <- names(piRNA_Summary[2])
+  namBotRight <- str_extract(namBotRight, '(?<=_)[A-Z0-9]*')
+  datBotRight <- piRNA_Summary[[2]]
+  
+  TopLeft <- ggplot(data = datTopLeft)+
+    geom_col( aes(x = x, y = Pos_Mean), fill = group.colours["Pos"], linewidth=0.5, colour="black", alpha=0.9)+
+    geom_col( aes(x = x, y = Neg_Mean), fill = group.colours["Neg"],linewidth=0.5, colour="black", alpha=0.9)+
+    geom_errorbar( aes(x = x, ymin = Pos_E_Min, ymax = Pos_E_Max), linewidth=1, colour="black", alpha=0.9 )+
+    geom_errorbar( aes(x = x, ymin = Neg_E_Min, ymax = Neg_E_Max), linewidth=1, colour="black", alpha=0.9 )+
+    xlab ("Size")+
+    ylab ("Count")+
+    ylim (-(max(GenMaxCount)*1.1),(max(GenMaxCount)*1.1))+
+    ggtitle(namTopLeft)+
+    piMaker_theme+
+    theme(legend.position = "none")
+  
+  
+  TopRight <- ggplot(data = datTopLeft)+
+    geom_col( aes(x = x, y = Pos_Mean), fill = group.colours["Pos"], linewidth=0.5, colour="black", alpha=0.9)+
+    geom_col( aes(x = x, y = Neg_Mean), fill = group.colours["Neg"],linewidth=0.5, colour="black", alpha=0.9)+
+    geom_errorbar( aes(x = x, ymin = Pos_E_Min, ymax = Pos_E_Max), linewidth=1, colour="black", alpha=0.9 )+
+    geom_errorbar( aes(x = x, ymin = Neg_E_Min, ymax = Neg_E_Max), linewidth=1, colour="black", alpha=0.9 )+
+    xlab ("Size")+
+    ylab ("Count")+
+    ylim (-(max(GenMaxCount)*1.1),(max(GenMaxCount)*1.1))+
+    ggtitle(namTopRight)+
+    piMaker_theme+
+    theme(legend.position = "none")
+  
+  
+  
+  MidLeft <-  ggplot(data = datMidLeft)+
+    geom_ribbon(aes(x = x, ymin = Pos_E_min, ymax = Pos_E_max), colour = group.colours["Pos"],
+                fill = group.colours["Pos"], alpha = 0.2, linewidth = 0.1)+
+    geom_line(aes(x = x, y = Pos_Mean),colour = group.colours["Pos"], linewidth = 0.5)+
+    geom_ribbon(aes(x = x, ymin = Neg_E_min, ymax = Neg_E_max), colour = group.colours["Neg"],
+                fill = group.colours["Neg"], alpha = 0.2, linewidth = 0.1)+
+    geom_line(aes(x = x, y = Neg_Mean), colour = group.colours["Neg"], linewidth = 0.5)+
+    geom_hline(yintercept = 0, linetype = "solid", colour = "grey")+
+    ggtitle(paste0(namMidLeft, "_siRNA_Coverage"))+
+    ylim(-max(NormScale), max(NormScale))+
+    xlab ("nt position")+
+    guides(guide_legend, fill = NULL)+
+    piMaker_theme+
+    theme(legend.position = "none")
+  
+  MidRight <- ggplot(data = datMidRight)+
+    geom_ribbon(aes(x = x, ymin = Pos_E_min, ymax = Pos_E_max), colour = group.colours["Pos"],
+                fill = group.colours["Pos"], alpha = 0.2, linewidth = 0.1)+
+    geom_line(aes(x = x, y = Pos_Mean),colour = group.colours["Pos"], linewidth = 0.5)+
+    geom_ribbon(aes(x = x, ymin = Neg_E_min, ymax = Neg_E_max), colour = group.colours["Neg"],
+                fill = group.colours["Neg"], alpha = 0.2, linewidth = 0.1)+
+    geom_line(aes(x = x, y = Neg_Mean), colour = group.colours["Neg"], linewidth = 0.5)+
+    geom_hline(yintercept = 0, linetype = "solid", colour = "grey")+
+    ggtitle(paste0(namMidRight, "_siRNA_Coverage"))+
+    ylim(-max(NormScale), max(NormScale))+
+    xlab ("nt position")+
+    guides(guide_legend, fill = NULL)+
+    piMaker_theme+
+    theme(legend.position = "none")
+  
+  BotLeft <- ggplot(data = datBotLeft)+
+    geom_ribbon(aes(x = x, ymin = Pos_E_min, ymax = Pos_E_max), colour = group.colours["Pos"],
+                fill = group.colours["Pos"], alpha = 0.2, linewidth = 0.1)+
+    geom_line(aes(x = x, y = Pos_Mean),colour = group.colours["Pos"], linewidth = 0.5)+
+    geom_ribbon(aes(x = x, ymin = Neg_E_min, ymax = Neg_E_max), colour = group.colours["Neg"],
+                fill = group.colours["Neg"], alpha = 0.2, linewidth = 0.1)+
+    geom_line(aes(x = x, y = Neg_Mean), colour = group.colours["Neg"], linewidth = 0.5)+
+    geom_hline(yintercept = 0, linetype = "solid", colour = "grey")+
+    ggtitle(paste0(namBotLeft, "_piRNA_Coverage"))+
+    ylim(-max(NormScale), max(NormScale))+
+    xlab ("nt position")+
+    guides(guide_legend, fill = NULL)+
+    piMaker_theme+
+    theme(legend.position = "none")
+  
+  BotRight <- ggplot(data = datBotRight)+
+    geom_ribbon(aes(x = x, ymin = Pos_E_min, ymax = Pos_E_max), colour = group.colours["Pos"],
+                fill = group.colours["Pos"], alpha = 0.2, linewidth = 0.1)+
+    geom_line(aes(x = x, y = Pos_Mean),colour = group.colours["Pos"], linewidth = 0.5)+
+    geom_ribbon(aes(x = x, ymin = Neg_E_min, ymax = Neg_E_max), colour = group.colours["Neg"],
+                fill = group.colours["Neg"], alpha = 0.2, linewidth = 0.1)+
+    geom_line(aes(x = x, y = Neg_Mean), colour = group.colours["Neg"], linewidth = 0.5)+
+    geom_hline(yintercept = 0, linetype = "solid", colour = "grey")+
+    ggtitle(paste0(namBotRight, "_piRNA_Coverage"))+
+    ylim(-max(NormScale), max(NormScale))+
+    xlab ("nt position")+
+    guides(guide_legend, fill = NULL)+
+    piMaker_theme+
+    theme(legend.position = "none")
+  
+  CoverageSummary <- ggarrange(TopLeft ,
+                               TopRight +rremove("ylab") +rremove("y.text"),
+                               MidLeft  +rremove("xlab") +rremove("x.text"),
+                               MidRight +rremove("xlab") +rremove("x.text") +rremove("ylab") +rremove("y.text"),
+                               BotLeft,
+                               BotRight +rremove("ylab") +rremove("y.text"),
+                               nrow = 3, ncol = 2, widths = 1, heights = 1, align = "hv" )
+  plot(CoverageSummary)
+  saveImage(paste(filename))
+  
+}
+
