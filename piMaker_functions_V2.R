@@ -765,7 +765,6 @@ CoverageSummaryPlot <- function(GenSummary_Plot,  siRNA_Summary, piRNA_Summary){
     piMaker_theme+
     theme(legend.position = "none")
   
-  
   TopRight <- ggplot(data = datTopLeft)+
     geom_col( aes(x = x, y = Pos_Mean), fill = group.colours["Pos"], linewidth=0.5, colour="black", alpha=0.9)+
     geom_col( aes(x = x, y = Neg_Mean), fill = group.colours["Neg"],linewidth=0.5, colour="black", alpha=0.9)+
@@ -777,8 +776,6 @@ CoverageSummaryPlot <- function(GenSummary_Plot,  siRNA_Summary, piRNA_Summary){
     ggtitle(namTopRight)+
     piMaker_theme+
     theme(legend.position = "none")
-  
-  
   
   MidLeft <-  ggplot(data = datMidLeft)+
     geom_ribbon(aes(x = x, ymin = Pos_E_min, ymax = Pos_E_max), colour = group.colours["Pos"],
@@ -852,3 +849,57 @@ CoverageSummaryPlot <- function(GenSummary_Plot,  siRNA_Summary, piRNA_Summary){
   
 }
 
+piMapper <- function(x, Scale){
+  
+  dat_2429. <- x
+  
+  Scale. = Scale
+  
+  for(n in 24:29){
+    dat_2429.[paste0("Pos_",n, "_x")] <- as.numeric(ifelse( (dat_2429.[(paste0("Pos_",n))] >0), 
+                                                            dat_2429.$Pos_pos, NA ))
+    dat_2429.[paste0("Pos_",n, "_xend")] <- dat_2429.[paste0("Pos_",n, "_x")] + n
+    dat_2429.[paste0("Neg_",n, "_x")] <- as.numeric(ifelse((dat_2429.[(paste0("Neg_",n))] >0), 
+                                                           dat_2429.$Neg_pos, NA))
+    dat_2429.[paste0("Neg_",n, "_xend")] <- dat_2429.[paste0("Neg_",n, "_x")] + n
+  }
+  
+  piMap <- ggplot(data = dat_2429.)+
+    
+    geom_hline(yintercept = 0, linetype = "solid", colour = "grey")+
+    
+    geom_rect(data = dat_2429., aes(ymin = 0, ymax = Pos_24, xmin = Pos_24_x,
+                                    xmax = Pos_24_xend, fill = "24"), colour = piRNA.colours["24"], alpha = 0.4)+
+    geom_rect(data = dat_2429., aes(ymin = 0, ymax = - Neg_24, xmin = Neg_24_x,
+                                    xmax = Neg_24_xend, fill = "24"), colour = piRNA.colours["24"], alpha = 0.4)+ 
+    
+    geom_rect(data = dat_2429., aes(ymin = 0, ymax = Pos_25, xmin = Pos_25_x,
+                                    xmax = Pos_25_xend, fill = "25"), colour = piRNA.colours["25"],  alpha = 0.4)+
+    geom_rect(data = dat_2429., aes(ymin = 0, ymax = - Neg_25, xmin = Neg_25_x,
+                                    xmax = Neg_25_xend, fill = "25"), colour = piRNA.colours["25"],  alpha = 0.4)+
+    
+    geom_rect(data = dat_2429., aes(ymin = 0, ymax = Pos_26, xmin = Pos_26_x,
+                                    xmax = Pos_26_xend, fill = "26"), colour = piRNA.colours["26"],  alpha = 0.4)+
+    geom_rect(data = dat_2429., aes(ymin = 0, ymax = - Neg_26, xmin = Neg_26_x,
+                                    xmax = Neg_26_xend, fill = "26"), colour = piRNA.colours["26"],  alpha = 0.4)+
+    
+    geom_rect(data = dat_2429., aes(ymin = 0, ymax = Pos_27, xmin = Pos_27_x,
+                                    xmax = Pos_27_xend, fill = "27"), colour = piRNA.colours["27"],  alpha = 0.4)+
+    geom_rect(data = dat_2429., aes(ymin = 0, ymax = - Neg_27, xmin = Neg_27_x,
+                                    xmax = Neg_27_xend, fill = "27"), colour = piRNA.colours["27"],  alpha = 0.4)+
+    
+    geom_rect(data = dat_2429., aes(ymin = 0, ymax = Pos_28, xmin = Pos_28_x,
+                                    xmax = Pos_28_xend, fill = "28"), colour = piRNA.colours["28"],  alpha = 0.4)+
+    geom_rect(data = dat_2429., aes(ymin = 0, ymax = - Neg_28, xmin = Neg_28_x,
+                                    xmax = Neg_28_xend, fill = "28"), colour = piRNA.colours["28"],  alpha = 0.4)+
+    
+    geom_rect(data = dat_2429., aes(ymin = 0, ymax = Pos_29, xmin = Pos_29_x,
+                                    xmax = Pos_25_xend, fill = "29"), colour = piRNA.colours["29"],  alpha = 0.4)+
+    geom_rect(data = dat_2429., aes(ymin = 0, ymax = - Neg_29, xmin = Neg_29_x,
+                                    xmax = Neg_25_xend, fill = "29"), colour = piRNA.colours["29"],  alpha = 0.4)+
+    ylim(-max(Scale),max(Scale))+
+    ggtitle(paste(nam))+
+    piMaker_theme+
+    scale_fill_manual("Size", values = c(piRNA.colours))
+  
+}

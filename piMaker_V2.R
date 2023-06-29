@@ -35,8 +35,20 @@ group.colours <- c(Pos = "red3", Neg = "blue2", Overall = "skyblue4")
 piRNA.colours <- c("24" = "magenta3", "25" = "dodgerblue2", "26" = "purple3",
                    "27" = "darkgoldenrod3", "28" = "aquamarine4", "29" = "orangered3")
 
+#assigning names to the reference sequences
+refNames <- c(c("GQ342966"="RNA_2"),
+              c("GQ342965"="RNA_1"))
+#putting in known protein coding regions here to plot on final graphs
+
+KnownCoding <-     data.frame ((name = c("protein A"), start = c(40), end = c(3036)),
+                              (name = c("protein B1"), start = c(2728), end = c(3036)))
+                              
+c("protein B2" = c (start = 2738, end = 3058)),
+                              c("coat protein precursor alpha" = c (start = 22, end = 1245)))
+                               
+
 #get the genome length, if this is not done, the length will be calculated from 
-#the BAM file, but may miss uncovered regions
+#the BAM file, but may miss uncovered regions 
 
 setwd(paste(REF))
 refSeq <- sub('\\..[^\\.]*$', '',(c(list.files(full.names = FALSE, include.dirs = FALSE, no.. = FALSE ))))
@@ -47,7 +59,7 @@ for (i in 1:length(refSeq)) {
   gm <- cbind(filename,dat)
   ifelse(exists("GenLength"), (GenLength <- rbind(GenLength, gm)), (GenLength <- gm))
   GenLength <- data.frame(GenLength)
-  if(i == length(refSeq)){rm(dat, gm)}
+  rm(dat, gm)
 }
 
 #make the file list
@@ -369,7 +381,32 @@ if(exists("Summary_Plot")){
     #saveImage(paste(filename))
   }        
 }
-
+#add genome information to summary plot if wanted
+for(i in 1:length(siRNA_Summary)){
+  name <- names(siRNA_Summary[i])
+  name <- str_extract(name, '(?<=_)[A-Z0-9]*')
+  name <- refNames[name]
+  filename <- paste0(name, "_siSummary")
+  data <- siRNA_Summary[[i]]
+  gendata <- KnownCoding[Group = name]
+  gg<- ggplot(data)+
+    geom_ribbon(aes(x = x, ymin = Pos_E_min, ymax = Pos_E_max), colour = group.colours["Pos"],
+                fill = group.colours["Pos"], alpha = 0.2, linewidth = 0.1)+
+    geom_line(aes(x = x, y = Pos_Mean),colour = group.colours["Pos"], linewidth = 0.5)+
+    geom_ribbon(aes(x = x, ymin = Neg_E_min, ymax = Neg_E_max), colour = group.colours["Neg"],
+                fill = group.colours["Neg"], alpha = 0.2, linewidth = 0.1)+
+    geom_line(aes(x = x, y = Neg_Mean), colour = group.colours["Neg"], linewidth = 0.5)+
+    geom_hline(yintercept = 0, linetype = "solid", colour = "grey")+
+    ggtitle(paste0(filename))+
+    ylim(-max(NormScale), max(NormScale))+
+    xlab ("nt position")+
+    guides(guide_legend, fill = NULL)+
+    piMaker_theme+
+    theme(legend.position = "none")
+  plot(gg)
+  #saveImage(paste(filename))
+}        
+}
 #piRNAs####
 #load functions and colours
 #function to find overlaps in piRNAs 
@@ -701,24 +738,43 @@ for (i in 1:(length(piSeqList))) {
         piRNA_List[[namP]] <- piPos
         piRNA_List[[namN]] <- piNeg
       }
-      #and make the sequence plots
-      gp <- ggplot()+
-        geom_logo(piPos, method = 'prob', seq_type = "rna", font = "helvetica_bold", col_scheme = DNA_col_scheme)+
-        theme_logo()+
-        ggtitle(namP)+
-        piMaker_theme
-      gn <- ggplot()+
-        geom_logo(piNeg, method = 'prob', seq_type = "rna", font = "helvetica_bold", col_scheme = DNA_col_scheme)+
-        theme_logo()+
-        ggtitle(namN)+
-        piMaker_theme
-      fig <- ggarrange(gp,gn, nrow = 2)
-      plot(fig)
-      #saveImage(paste0(namj))
     }
   }
   rm(data, datj, datjNeg, datjPos, datsz, piPos, piNeg)
 } 
+#make the sequence logos 
+for (i in 1:(length(samples))){
+  snam <- samples[[i]]
+  for (r in 1:length(refSeq)){
+    rnam <- refSeq[[r]]
+    rname <- refNames[rnam]
+    for (sz in 1:length(Sizes)){ 
+      sznam <- paste0("_",Sizes[[sz]])
+      namP <- paste0(snam, "_", rname, sznam, "_Pos")
+      namN <- paste0(snam, "_", rname, sznam, "_Neg")
+      dat <- piRNA_List[grepl(snam, names(piRNA_List)) & 
+                          grepl(rnam, names(piRNA_List)) &
+                          grepl(sznam, names(piRNA_List))]
+      piPos <- as.data.frame(dat[grepl("Pos", names(dat))])
+      piNeg <- as.data.frame(dat[grepl("Neg", names(dat))])
+      rm(dat)
+                   
+gp <- ggplot()+
+  geom_logo(piPos, method = 'prob', seq_type = "rna", font = "helvetica_bold", col_scheme = DNA_col_scheme)+
+  theme_logo()+
+  ggtitle(namP)+
+  piMaker_theme
+gn <- ggplot()+
+  geom_logo(piNeg, method = 'prob', seq_type = "rna", font = "helvetica_bold", col_scheme = DNA_col_scheme)+
+  theme_logo()+
+  ggtitle(namN)+
+  piMaker_theme
+fig <- ggarrange(gp,gn, nrow = 2)
+plot(fig)
+#saveImage(paste0(namj))
+   }
+  }
+}
 #make the position matrix for the reads, counts how many of each read length at each position
 #this can take a while! 
 if(exists("piTally_List")){rm(piTally_List)}
@@ -1316,58 +1372,8 @@ for(i in 1:length(piTally_List_Matrix_Individual)){
   namfile <- names(piTally_List_Matrix_Individual[i])
   dat <- piTally_List_Matrix_Individual[[i]]
   nam <- paste0(namfile, "_2429")
-  dat_2429 <- dat
-  
-  for(n in 24:29){
-    dat_2429[paste0("Pos_",n, "_x")] <- as.numeric(ifelse( (dat_2429[(paste0("Pos_",n))] >0), 
-                                                           dat_2429$Pos_pos, NA ))
-    dat_2429[paste0("Pos_",n, "_xend")] <- dat_2429[paste0("Pos_",n, "_x")] + n
-    dat_2429[paste0("Neg_",n, "_x")] <- as.numeric(ifelse((dat_2429[(paste0("Neg_",n))] >0), 
-                                                          dat_2429$Neg_pos, NA))
-    dat_2429[paste0("Neg_",n, "_xend")] <- dat_2429[paste0("Neg_",n, "_x")] + n
-  }
-  
-  gg <- ggplot()+
-    geom_hline(yintercept = 0, linetype = "solid", colour = "grey")+
-    geom_rect(data = dat_2429, aes(ymin = 0, ymax = Pos_24, xmin = Pos_24_x,
-                                   xmax = Pos_24_xend, fill = "24"), colour = piRNA.colours["24"], alpha = 0.4)+
-    geom_rect(data = dat_2429, aes(ymin = 0, ymax = - Neg_24, xmin = Neg_24_x,
-                                   xmax = Neg_24_xend, fill = "24"), colour = piRNA.colours["24"], alpha = 0.4)+ 
-    
-    
-    geom_rect(data = dat_2429, aes(ymin = 0, ymax = Pos_25, xmin = Pos_25_x,
-                                   xmax = Pos_25_xend, fill = "25"), colour = piRNA.colours["25"],  alpha = 0.4)+
-    geom_rect(data = dat_2429, aes(ymin = 0, ymax = - Neg_25, xmin = Neg_25_x,
-                                   xmax = Neg_25_xend, fill = "25"), colour = piRNA.colours["25"],  alpha = 0.4)+
-    
-    
-    geom_rect(data = dat_2429, aes(ymin = 0, ymax = Pos_26, xmin = Pos_26_x,
-                                   xmax = Pos_26_xend, fill = "26"), colour = piRNA.colours["26"],  alpha = 0.4)+
-    geom_rect(data = dat_2429, aes(ymin = 0, ymax = - Neg_26, xmin = Neg_26_x,
-                                   xmax = Neg_26_xend, fill = "26"), colour = piRNA.colours["26"],  alpha = 0.4)+
-    
-    
-    geom_rect(data = dat_2429, aes(ymin = 0, ymax = Pos_27, xmin = Pos_27_x,
-                                   xmax = Pos_27_xend, fill = "27"), colour = piRNA.colours["27"],  alpha = 0.4)+
-    geom_rect(data = dat_2429, aes(ymin = 0, ymax = - Neg_27, xmin = Neg_27_x,
-                                   xmax = Neg_27_xend, fill = "27"), colour = piRNA.colours["27"],  alpha = 0.4)+
-    
-    
-    geom_rect(data = dat_2429, aes(ymin = 0, ymax = Pos_28, xmin = Pos_28_x,
-                                   xmax = Pos_28_xend, fill = "28"), colour = piRNA.colours["28"],  alpha = 0.4)+
-    geom_rect(data = dat_2429, aes(ymin = 0, ymax = - Neg_28, xmin = Neg_28_x,
-                                   xmax = Neg_28_xend, fill = "28"), colour = piRNA.colours["28"],  alpha = 0.4)+
-    
-    geom_rect(data = dat_2429, aes(ymin = 0, ymax = Pos_29, xmin = Pos_29_x,
-                                   xmax = Pos_25_xend, fill = "29"), colour = piRNA.colours["29"],  alpha = 0.4)+
-    geom_rect(data = dat_2429, aes(ymin = 0, ymax = - Neg_29, xmin = Neg_29_x,
-                                   xmax = Neg_25_xend, fill = "29"), colour = piRNA.colours["29"],  alpha = 0.4)+
-    ylim(-max(piMaxInd),max(piMaxInd))+
-    ggtitle(paste(nam))+
-    piMaker_theme+
-    scale_fill_manual("Size", values = c(piRNA.colours))
-  
-  plot(gg)
+  piPlot <- piMapper(dat, piMaxInd)
+  plot(piPlot)
   #saveImage(paste0(nam))
 }    
 #run piCatcherDual for the pi
