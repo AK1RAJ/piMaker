@@ -18,7 +18,7 @@ source("https://raw.githubusercontent.com/AK1RAJ/piMaker/main/piMaker_functions_
 #test Bam files are at https://github.com/AK1RAJ/piMaker/tree/main/BAM
 #test reference sequences are at: https://github.com/AK1RAJ/piMaker/tree/main/refSeq
 
-savefiles = F #T/F option on whether to save the output plots or not
+savefiles = T #T/F option on whether to save the output plots or not
 
 #set working directory and get the files####
 #make a project folder with three subfolders for 1- the BAM files (BAM), 2- the reference sequences (refSeq)
@@ -40,12 +40,15 @@ refNames <- c(c("GQ342966"="RNA_2"),
               c("GQ342965"="RNA_1"))
 #putting in known protein coding regions here to plot on final graphs
 
-KnownCoding <-     data.frame ((name = c("protein A"), start = c(40), end = c(3036)),
-                              (name = c("protein B1"), start = c(2728), end = c(3036)))
-                              
-c("protein B2" = c (start = 2738, end = 3058)),
-                              c("coat protein precursor alpha" = c (start = 22, end = 1245)))
-                               
+KnownCoding <- list()
+KnownCoding[["RNA_1"]] <- data.frame(number = c(1,2,3),
+                          name = c("protein A", "protein B1", "protein B2"),
+                          start = c(40, 2728, 2738),
+                          end = c(3036, 3036, 3058))
+KnownCoding[["RNA_2"]] <- data.frame(number = c(1),
+                                     name = c("coat protein precursor alpha"),
+                                     start = c(22),
+                                     end = c(1245))
 
 #get the genome length, if this is not done, the length will be calculated from 
 #the BAM file, but may miss uncovered regions 
@@ -381,14 +384,14 @@ if(exists("Summary_Plot")){
     #saveImage(paste(filename))
   }        
 }
-#add genome information to summary plot if wanted
+#add genome information to summary plot if wanted 
 for(i in 1:length(siRNA_Summary)){
   name <- names(siRNA_Summary[i])
   name <- str_extract(name, '(?<=_)[A-Z0-9]*')
   name <- refNames[name]
   filename <- paste0(name, "_siSummary")
   data <- siRNA_Summary[[i]]
-  gendata <- KnownCoding[Group = name]
+  gendata <- KnownCoding[[name]]
   gg<- ggplot(data)+
     geom_ribbon(aes(x = x, ymin = Pos_E_min, ymax = Pos_E_max), colour = group.colours["Pos"],
                 fill = group.colours["Pos"], alpha = 0.2, linewidth = 0.1)+
@@ -397,16 +400,25 @@ for(i in 1:length(siRNA_Summary)){
                 fill = group.colours["Neg"], alpha = 0.2, linewidth = 0.1)+
     geom_line(aes(x = x, y = Neg_Mean), colour = group.colours["Neg"], linewidth = 0.5)+
     geom_hline(yintercept = 0, linetype = "solid", colour = "grey")+
+    geom_rect(data = gendata, aes(xmin = start, xmax = end, ymin = ((0.0005*number)+0.0045),
+                                  ymax = ((0.0005*number)+0.005), colour = "black"),
+              fill = "lightblue", alpha = 0.25)+
+    geom_text(data = gendata, label = gendata$name, 
+              x = gendata$start, 
+              y = ((0.0005*gendata$number)+0.005),
+              nudge_x = 1, nudge_y = 1,
+              check_overlap = F)+
     ggtitle(paste0(filename))+
     ylim(-max(NormScale), max(NormScale))+
     xlab ("nt position")+
     guides(guide_legend, fill = NULL)+
     piMaker_theme+
     theme(legend.position = "none")
+
   plot(gg)
-  #saveImage(paste(filename))
+  saveImage(paste(filename))
 }        
-}
+
 #piRNAs####
 #load functions and colours
 #function to find overlaps in piRNAs 
