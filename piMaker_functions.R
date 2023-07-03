@@ -110,7 +110,7 @@ filesIn <- function(files = NULL, tidyname = TRUE, what = c("qname", "rname", "s
 getCoverage <- function(x, GenSize){
   res <- x
   Len = GenSize
-  Count <- Gensize
+  Count <- GenSize
   #filter the positives
   datSP <- split(res,res$strand)
   datSP <- datSP[-3]
