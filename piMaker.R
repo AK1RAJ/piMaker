@@ -13,7 +13,7 @@ if (any(installed_packages == FALSE)) {
 invisible(lapply(packages, library, character.only = TRUE))
 # Rsamtools might require forced installation on newer versions of R : BiocManager::install("Rsamtools", force = T)
 #load the functions from here
-source("https://raw.githubusercontent.com/AK1RAJ/piMaker/main/piMaker_functions_V2.R")
+source("https://raw.githubusercontent.com/AK1RAJ/piMaker/main/piMaker_functions.R")
 
 #test Bam files are at https://github.com/AK1RAJ/piMaker/tree/main/BAM
 #test reference sequences are at: https://github.com/AK1RAJ/piMaker/tree/main/refSeq
