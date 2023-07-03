@@ -454,8 +454,8 @@ piProb <- function(x, .Overlap = parent.frame()$Overlap) {
   return(res)
 }
 
-piProbSum <- function(x, .Overlap = parent.frame()$Overlap){ #clone of overLaps function but calculates probability by dividing input by total
-  #get input
+piProbSum <- function(x, .Overlap = parent.frame()$Overlap){ #clone of overLaps function but 
+  #calculates probability by dividing input by total
   Lap <-  x
   lap <- data.frame(Lap[, grepl("By", colnames(Lap))])
   oLap <- c()
