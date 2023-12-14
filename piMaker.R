@@ -2,16 +2,20 @@
 # Package names
 #this code uses the stringr, ggplot2, purrr and dplyr packages 
 #from the tidyverse so it might be easier to install the whole tidyverse if wanted....
-packages <- c( "BiocManager", "stringr" , "dplyr", "ggplot2", "purrr", "Biostrings",  "Rsamtools", "ggseqlogo", "ggpubr" )
+packages <- c( "BiocManager", "stringr" , "dplyr", "ggplot2", "purrr", "Biostrings",  "Rsamtools", "ggseqlogo", "ggpubr", "devtools" )
 
 # Install packages not yet installed
 installed_packages <- packages %in% rownames(installed.packages())
 if (any(installed_packages == FALSE)) {
   install.packages(packages[!installed_packages])
 }
+if (any(installed_packages ==FALSE)) {
+  BiocManager::install(packages[!installed_packages])
+}
 # Packages loading
 invisible(lapply(packages, library, character.only = TRUE))
-# Rsamtools might require forced installation on newer versions of R : BiocManager::install("Rsamtools", force = T)
+# Packages might require forced installation on newer versions of R : BiocManager::install("ggseqlogo", force = T)
+#devtools::install_github("omarwagih/ggseqlogo")
 #load the functions from here
 source("https://raw.githubusercontent.com/AK1RAJ/piMaker/main/piMaker_functions.R")
 
@@ -24,7 +28,7 @@ savefiles = T #T/F option on whether to save the output plots or not
 #make a project folder with three subfolders for 1- the BAM files (BAM), 2- the reference sequences (refSeq)
 #3- the output (Output)
 
-DIR <- "E:/TidyCode"                  #"C:/" put your directory here
+DIR <- "C:/Users/aalexan4/Documents/TidyCode"                  #"C:/" put your directory here
 BAM <- paste0(DIR,"/BAM") #location of the BAM alignment files
 REF <- paste0(DIR,"/refSeq") #location of the reference sequences if you have them, if not do not run the first bit of code
 OUT <- paste0(DIR,"/Output") #this directory is only used if you set the savefiles to true
@@ -657,6 +661,8 @@ if(exists("Summary_Plot")){
   for(i in 1:length(piRNA_Summary)){
     name <- names(piRNA_Summary[i])
     name <- str_extract(name, '(?<=_)[A-Z0-9]*')
+    name <- refNames[name]
+    gendata <- KnownCoding[[name]]
     filename <- paste0(name, "_piSummary")
     data <- piRNA_Summary[[i]]
     gg<- ggplot(data)+
@@ -667,6 +673,14 @@ if(exists("Summary_Plot")){
                   fill = group.colours["Neg"], alpha = 0.2, linewidth = 0.1)+
       geom_line(aes(x = x, y = Neg_Mean), colour = group.colours["Neg"], linewidth = 0.5)+
       geom_hline(yintercept = 0, linetype = "solid", colour = "grey")+
+      geom_rect(data = gendata, aes(xmin = start, xmax = end, ymin = ((0.0005*number)+0.0045),
+                                    ymax = ((0.0005*number)+0.005), colour = "black"),
+                fill = "lightblue", alpha = 0.25)+
+      geom_text(data = gendata, label = gendata$name, 
+                x = gendata$start, 
+                y = ((0.0005*gendata$number)+0.005),
+                nudge_x = 1, nudge_y = 1,
+                check_overlap = F)+
       ggtitle(paste0(filename))+
       ylim(-max(NormScale), max(NormScale))+
       xlab ("nt position")+

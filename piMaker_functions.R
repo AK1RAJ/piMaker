@@ -740,18 +740,30 @@ CoverageSummaryPlot <- function(GenSummary_Plot,  siRNA_Summary, piRNA_Summary){
   namMidLeft <- names(siRNA_Summary[1])
   namMidLeft <- str_extract(namMidLeft, '(?<=_)[A-Z0-9]*')
   datMidLeft <- siRNA_Summary[[1]]
+  name <- refNames[namMidLeft]
+  gendata <- KnownCoding[[name]]
+  gendatMidLeft <- KnownCoding[[name]]
   
   namMidRight <- names(siRNA_Summary[2])
   namMidRight <- str_extract(namMidRight, '(?<=_)[A-Z0-9]*')
   datMidRight <- siRNA_Summary[[2]]
+  name <- refNames[namMidRight]
+  gendata <- KnownCoding[[name]]
+  gendatMidRight <- KnownCoding[[name]]
   
   namBotLeft <- names(piRNA_Summary[1])
   namBotLeft <- str_extract(namBotLeft, '(?<=_)[A-Z0-9]*')
   datBotLeft <- piRNA_Summary[[1]]
+  name <- refNames[namBotLeft]
+  gendata <- KnownCoding[[name]]
+  gendatBotLeft <- KnownCoding[[name]]
   
   namBotRight <- names(piRNA_Summary[2])
   namBotRight <- str_extract(namBotRight, '(?<=_)[A-Z0-9]*')
   datBotRight <- piRNA_Summary[[2]]
+  name <- refNames[namBotRight]
+  gendata <- KnownCoding[[name]]
+  gendatBotRight <- KnownCoding[[name]]
   
   TopLeft <- ggplot(data = datTopLeft)+
     geom_col( aes(x = x, y = Pos_Mean), fill = group.colours["Pos"], linewidth=0.5, colour="black", alpha=0.9)+
@@ -785,6 +797,14 @@ CoverageSummaryPlot <- function(GenSummary_Plot,  siRNA_Summary, piRNA_Summary){
                 fill = group.colours["Neg"], alpha = 0.2, linewidth = 0.1)+
     geom_line(aes(x = x, y = Neg_Mean), colour = group.colours["Neg"], linewidth = 0.5)+
     geom_hline(yintercept = 0, linetype = "solid", colour = "grey")+
+    geom_rect(data = gendatMidLeft, aes(xmin = start, xmax = end, ymin = ((0.0005*number)+0.0045),
+                                  ymax = ((0.0005*number)+0.005), colour = "black"),
+              fill = "lightblue", alpha = 0.25)+
+    geom_text(data = gendatMidLeft, label = gendatMidLeft$name, 
+              x = gendatMidLeft$start, 
+              y = ((0.0005*gendatMidLeft$number)+0.005),
+              nudge_x = 1, nudge_y = 1,
+              check_overlap = F)+
     ggtitle(paste0(namMidLeft, "_siRNA_Coverage"))+
     ylim(-max(NormScale), max(NormScale))+
     xlab ("nt position")+
@@ -800,6 +820,14 @@ CoverageSummaryPlot <- function(GenSummary_Plot,  siRNA_Summary, piRNA_Summary){
                 fill = group.colours["Neg"], alpha = 0.2, linewidth = 0.1)+
     geom_line(aes(x = x, y = Neg_Mean), colour = group.colours["Neg"], linewidth = 0.5)+
     geom_hline(yintercept = 0, linetype = "solid", colour = "grey")+
+    geom_rect(data = gendatMidRight, aes(xmin = start, xmax = end, ymin = ((0.0005*number)+0.0045),
+                                        ymax = ((0.0005*number)+0.005), colour = "black"),
+              fill = "lightblue", alpha = 0.25)+
+    geom_text(data = gendatMidRight, label = gendatMidRight$name, 
+              x = gendatMidRight$start, 
+              y = ((0.0005*gendatMidRight$number)+0.005),
+              nudge_x = 1, nudge_y = 1,
+              check_overlap = F)+
     ggtitle(paste0(namMidRight, "_siRNA_Coverage"))+
     ylim(-max(NormScale), max(NormScale))+
     xlab ("nt position")+
@@ -815,6 +843,14 @@ CoverageSummaryPlot <- function(GenSummary_Plot,  siRNA_Summary, piRNA_Summary){
                 fill = group.colours["Neg"], alpha = 0.2, linewidth = 0.1)+
     geom_line(aes(x = x, y = Neg_Mean), colour = group.colours["Neg"], linewidth = 0.5)+
     geom_hline(yintercept = 0, linetype = "solid", colour = "grey")+
+    geom_rect(data = gendatBotLeft, aes(xmin = start, xmax = end, ymin = ((0.0005*number)+0.0045),
+                                         ymax = ((0.0005*number)+0.005), colour = "black"),
+              fill = "lightblue", alpha = 0.25)+
+    geom_text(data = gendatBotLeft, label = gendatBotLeft$name, 
+              x = gendatBotLeft$start, 
+              y = ((0.0005*gendatBotLeft$number)+0.005),
+              nudge_x = 1, nudge_y = 1,
+              check_overlap = F)+
     ggtitle(paste0(namBotLeft, "_piRNA_Coverage"))+
     ylim(-max(NormScale), max(NormScale))+
     xlab ("nt position")+
@@ -830,12 +866,21 @@ CoverageSummaryPlot <- function(GenSummary_Plot,  siRNA_Summary, piRNA_Summary){
                 fill = group.colours["Neg"], alpha = 0.2, linewidth = 0.1)+
     geom_line(aes(x = x, y = Neg_Mean), colour = group.colours["Neg"], linewidth = 0.5)+
     geom_hline(yintercept = 0, linetype = "solid", colour = "grey")+
+    geom_rect(data = gendatBotRight, aes(xmin = start, xmax = end, ymin = ((0.0005*number)+0.0045),
+                                        ymax = ((0.0005*number)+0.005), colour = "black"),
+              fill = "lightblue", alpha = 0.25)+
+    geom_text(data = gendatBotRight, label = gendatBotRight$name, 
+              x = gendatBotRight$start, 
+              y = ((0.0005*gendatBotRight$number)+0.005),
+              nudge_x = 1, nudge_y = 1,
+              check_overlap = F)+
     ggtitle(paste0(namBotRight, "_piRNA_Coverage"))+
     ylim(-max(NormScale), max(NormScale))+
     xlab ("nt position")+
     guides(guide_legend, fill = NULL)+
     piMaker_theme+
     theme(legend.position = "none")
+  
   
   CoverageSummary <- ggarrange(TopLeft ,
                                TopRight +rremove("ylab") +rremove("y.text"),
