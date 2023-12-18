@@ -1222,7 +1222,7 @@ for (i in 1:length(samples)){
     #saveImage(paste0(namd))
   }
 }
-#FIN
+#Next section uses the data to make summary figures combining all results
 #making individual data sets for each read to give final mean and SD plots####
 #make piRNA position matrix for each sample 
 if(exists("piMatrixIndividual")){rm(piMatrixIndividual, piCountInd)}
@@ -1500,7 +1500,7 @@ for (i in 1:length(BAMList)){
     Line <- pi_Signatures_Individual [[grep(paste0(namfile, "_", Rnam ), names(pi_Signatures_Individual))]]
     Bar <- pi_barplot_Ind [[grep(paste0(namfile, "_", Rnam ), names(pi_barplot_Ind))]]
     namd <- paste0(namfile, "_", Rnam, "_pi")
-    fig <- MatrixPlot(Line, Bar, piProMaxI, piProWeiMaxI, barMaxInd)
+    fig <-  MatrixPlot(Line, Bar, piProMaxI, piProWeiMaxI, barMaxInd)
     plot(fig)
     #saveImage(paste0(namd))
   }

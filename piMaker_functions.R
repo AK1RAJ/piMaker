@@ -948,3 +948,172 @@ piMapper <- function(x, Scale){
     scale_fill_manual("Size", values = c(piRNA.colours))
   
 }
+
+
+MatrixPlotSD <- function(Line, Bar, ProbMax, WeightedProbMax, BarMax){
+  
+  dat = Line
+  datb = Bar
+  probmax = max(ProbMax, WeightedProbMax)
+  maxbar = max(BarMax)
+  maxbar = round_any(maxbar, 10, f = ceiling)
+  
+  gz <- ggplot(data = dat, aes(x = x_Mean))+
+    geom_line(aes(y = Pos_Z_Mean, colour = "Pos"), linewidth = 0.75 )+
+    geom_line(aes(y = Neg_Z_Mean, colour = "Neg"), linewidth = 0.75 )+
+    geom_line(aes(y = Z_Score_Mean, colour = "Overall"),  linewidth = 1 )+
+    geom_ribbon(aes(x = x_Mean, ymin = Pos_Z_SD_Minus, ymax = Pos_Z_SD_Plus), colour = group.colours["Pos"],
+                fill = group.colours["Pos"], alpha = 0.1, linewidth = 0.1)+
+    geom_ribbon(aes(x = x_Mean, ymin = Neg_Z_SD_Minus, ymax = Neg_Z_SD_Plus), colour = group.colours["Neg"],
+                fill = group.colours["Neg"], alpha = 0.1, linewidth = 0.1)+
+    geom_ribbon(aes(x = x_Mean, ymin = Z_Score_SD_Minus, ymax = Z_Score_SD_Plus), colour = group.colours["Overall"],
+                fill = group.colours["Overall"], alpha = 0.1, linewidth = 0.1)+
+    #ggtitle(paste0(namd))+
+    ylim(-5,5)+
+    ylab("Z-Score")+
+    xlab("Overlap (nt)")+
+    theme(legend.position="none")+
+    guides(colour = "none")+
+    scale_colour_manual(values=group.colours)+
+    #theme(aspect.ratio = 0.25:1)+
+    piMaker_theme
+  #plot(gz)
+  
+  go <- ggplot(data = datb, aes(x = x))+
+    geom_bar(stat = "identity", aes(y = Count, fill = Group, alpha = 0.5), colour = "darkslategrey",  linewidth = 0.75)+
+    geom_errorbar( aes( ymin = Cumulative - SD, ymax = Cumulative + SD), width = 0.25)+
+    #ggtitle(paste0(namd))+
+    ylim(0, (maxbar+25))+
+    xlab("Overlap (nt)")+
+    ylab("No. of pairs")+
+    guides(colour = FALSE)+
+    piMaker_theme+
+    theme(legend.position="none")+
+    #scale_colour_manual(values=group.colours)
+    scale_fill_manual(values = group.colours)
+  #plot(go)
+  
+  gp <- ggplot(data = dat, aes(x = x_Mean))+
+    geom_line(aes(y = Pos_probability_Mean, colour = "Pos"), linewidth = 0.75 )+
+    geom_line(aes(y = Neg_probability_Mean, colour = "Neg"), linewidth = 0.75 )+
+    geom_line(aes(y = Probability_Mean, colour = "Overall"), linewidth = 1 )+
+    geom_ribbon(aes(x = x_Mean, ymin = Pos_probability_SD_Minus, ymax = Pos_probability_SD_Plus), colour = group.colours["Pos"],
+                fill = group.colours["Pos"], alpha = 0.1, linewidth = 0.1)+
+    geom_ribbon(aes(x = x_Mean, ymin = Neg_probability_SD_Minus, ymax = Neg_probability_SD_Plus), colour = group.colours["Neg"],
+                fill = group.colours["Neg"], alpha = 0.1, linewidth = 0.1)+
+    geom_ribbon(aes(x = x_Mean, ymin = Probability_SD_Minus, ymax = Probability_SD_Plus), colour = group.colours["Overall"],
+                fill = group.colours["Overall"], alpha = 0.1, linewidth = 0.1)+
+    ylim(0, (probmax*1.1))+
+    ylab("probability")+
+    xlab("Overlap (nt)")+
+    theme(legend.position="none")+
+    guides(colour = FALSE)+
+    piMaker_theme+
+    scale_colour_manual( values = group.colours) 
+  plot(gp)
+  
+  gpw <- ggplot(data = dat, aes(x = x_Mean))+
+    geom_line(aes(y = Pos_weighted_probability_Mean, colour = "Pos"), linewidth = 0.75 )+
+    geom_line(aes(y = Neg_weighted_probability_Mean, colour = "Neg"), linewidth = 0.75 )+
+    geom_line(aes(y = Weighted_Probability_Mean, colour = "Overall"), linewidth = 1 )+
+    geom_ribbon(aes(x = x_Mean, ymin = Pos_weighted_probability_SD_Minus, ymax = Pos_weighted_probability_SD_Plus), colour = group.colours["Pos"],
+                fill = group.colours["Pos"], alpha = 0.1, linewidth = 0.1)+
+    geom_ribbon(aes(x = x_Mean, ymin = Neg_weighted_probability_SD_Minus, ymax = Neg_weighted_probability_SD_Plus), colour = group.colours["Neg"],
+                fill = group.colours["Neg"], alpha = 0.1, linewidth = 0.1)+
+    geom_ribbon(aes(x = x_Mean, ymin = Weighted_Probability_SD_Minus, ymax = Weighted_Probability_SD_Plus), colour = group.colours["Overall"],
+                fill = group.colours["Overall"], alpha = 0.1, linewidth = 0.1)+
+    #ggtitle(paste0(namd))+
+    ylim(0, (probmax*1.1))+
+    ylab("Weighted probability")+
+    xlab("Overlap (nt)")+
+    theme(legend.position="none")+
+    guides(colour = FALSE)+
+    #theme(aspect.ratio = 0.25:1)+
+    piMaker_theme+
+    scale_colour_manual( values = group.colours) 
+  #plot(gpw)
+  
+  fig <- ggarrange(gz +rremove("xlab") +rremove("x.text"),  gp +rremove("xlab") +rremove("x.text"), go  ,gpw, nrow = 2, ncol = 2 )
+  
+  
+  
+  
+  annotate_figure(fig, top = text_grob(paste0(namd), 
+                                       color = "darkslategrey", face = "bold", size = 14))
+}
+
+
+MatrixPlot <- function(Line, Bar, ProbMax, WeightedProbMax, BarMax){
+  
+  dat = Line
+  datb = Bar
+  probmax = max(ProbMax, WeightedProbMax)
+  maxbar = max(BarMax)
+  maxbar = round_any(maxbar, 10, f = ceiling)
+  
+  gz <- ggplot(data = dat, aes(x = x))+
+    geom_line(aes(y = Pos_Z, colour = "Pos"), linewidth = 0.75 )+
+    geom_line(aes(y = Neg_Z, colour = "Neg"), linewidth = 0.75 )+
+    geom_line(aes(y = Z_Score, colour = "Overall"),  linewidth = 1 )+
+    #ggtitle(paste0(namd))+
+    ylim(-5,5)+
+    ylab("Z-Score")+
+    xlab("Overlap (nt)")+
+    theme(legend.position="none")+
+    guides(colour = "none")+
+    scale_colour_manual(values=group.colours)+
+    #theme(aspect.ratio = 0.25:1)+
+    piMaker_theme
+  #plot(gz)
+  
+  go <- ggplot(data = datb, aes(x = x))+
+    geom_bar(stat = "identity", aes(y = Count, fill = Group, alpha = 0.5), colour = "darkslategrey",  linewidth = 0.75)+
+    #ggtitle(paste0(namd))+
+    ylim(0, (maxbar+25))+
+    xlab("Overlap (nt)")+
+    ylab("No. of pairs")+
+    guides(colour = FALSE)+
+    piMaker_theme+
+    theme(legend.position="none")+
+    #scale_colour_manual(values=group.colours)
+    scale_fill_manual(values = group.colours)
+  #plot(go)
+  
+  gp <- ggplot(data = dat, aes(x = x))+
+    geom_line(aes(y = Pos_probability, colour = "Pos"), linewidth = 0.75 )+
+    geom_line(aes(y = Neg_probability, colour = "Neg"), linewidth = 0.75 )+
+    geom_line(aes(y = Probability, colour = "Overall"), linewidth = 1 )+
+    ylim(0, (probmax*1.1))+
+    ylab("probability")+
+    xlab("Overlap (nt)")+
+    theme(legend.position="none")+
+    guides(colour = FALSE)+
+    piMaker_theme+
+    scale_colour_manual( values = group.colours) 
+  #plot(gz)
+  
+  gpw <- ggplot(data = dat, aes(x = x))+
+    geom_line(aes(y = Pos_weighted_probability, colour = "Pos"), linewidth = 0.75 )+
+    geom_line(aes(y = Neg_weighted_probability, colour = "Neg"), linewidth = 0.75 )+
+    geom_line(aes(y = Weighted_Probability, colour = "Overall"), linewidth = 1 )+
+    #ggtitle(paste0(namd))+
+    ylim(0, (probmax*1.1))+
+    ylab("Weighted probability")+
+    xlab("Overlap (nt)")+
+    theme(legend.position="none")+
+    guides(colour = FALSE)+
+    #theme(aspect.ratio = 0.25:1)+
+    piMaker_theme+
+    scale_colour_manual( values = group.colours) 
+  #plot(gpw)
+  
+  fig <- ggarrange(gz +rremove("xlab") +rremove("x.text"),  gp +rremove("xlab") +rremove("x.text"), go  ,gpw, nrow = 2, ncol = 2 )
+  
+  
+  
+  
+  annotate_figure(fig, top = text_grob(paste0(namd), 
+                                       color = "darkslategrey", face = "bold", size = 14))
+}
+
+
