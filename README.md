@@ -9,5 +9,4 @@ BAM <- paste0(DIR,"/BAM")
 REF <- paste0(DIR,"/refSeq")
 OUT <- paste0(DIR,"/Output")
 
-I have not added the save feature yet!
 Save feature now added and siRNA overlaps added.
