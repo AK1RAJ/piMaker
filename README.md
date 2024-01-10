@@ -1,5 +1,4 @@
 # piMaker for mapping the overlaps of siRNAs and piRNAs
-test BAM files are located in the BAM folder and the corresponding reference sequences are in the refSeq folder
 
 #set working directory and get the files####
 #make a project folder with three subfolders for 1- the BAM files (BAM), 2- the reference sequences (refSeq)
