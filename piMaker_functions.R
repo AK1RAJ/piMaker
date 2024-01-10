@@ -175,7 +175,7 @@ makeRsq <- function(x){
 maxCount <- function(Min, Max){
   cPos <- Max
   cNeg <- Min
-  c <- cbind(max(cPos),max(abs(cNeg)))
+  c <- cbind(max(cPos, na.rm = T), max(abs(cNeg), na.rm = T))
   colnames(c) <- c("Pos", "Neg")
   return(c)
 }
@@ -329,25 +329,29 @@ piFreq <- function(x){
   datrNeg <- dplyr::filter(datr, datr$strand == "-")
   datrNeg$FivPr <- datrNeg$pos + datrNeg$qwidth
   sumPos <- as.data.frame(xtabs(~pos, data = datrPos))
+  sumPos$pos <- as.numeric(sumPos$pos)
   row.names(sumPos) <- sumPos$pos
   sumPos$x <- as.numeric(row.names(sumPos))
   sumNeg <- as.data.frame(xtabs(~FivPr, data = datrNeg))
+  sumNeg$FivPr <- as.numeric(sumNeg$FivPr)
   row.names(sumNeg) <- sumNeg$FivPr
   sumNeg$x <- as.numeric(row.names(sumNeg))
   sumNeg$Freq <- -sumNeg$Freq
+  
   plot <- as.data.frame(c(-1 : rsq+1))
   row.names(plot) <- plot[,1]
   plot <- merge(plot, sumPos, by.x = 1, by.y =0, all.x = TRUE, all.y = TRUE)
   row.names(plot) <- plot[,1]
-  plot <- plot[,c(1,3)]
   plot[is.na(plot)] <- 0 
+  plot <- plot[,c(1,3)]
   colnames(plot) <- c("Pos", "Freq")
+  
   plotNeg <- as.data.frame(c(-1 : rsq+1))
   row.names(plotNeg) <- plotNeg[,1]
   plotNeg <- merge(plotNeg, sumNeg, by.x = 1, by.y =0, all.x = TRUE, all.y = TRUE)
+  plotNeg[is.na(plotNeg)] <- 0
   plotNeg <- plotNeg[,c(1,3)]
   row.names(plotNeg) <- plotNeg[,1]
-  plotNeg[is.na(plotNeg)] <- 0
   colnames(plotNeg) <- c("Neg", "Freq")
   res <- merge(plot, plotNeg, by.x = 1, by.y = 1, all.x = TRUE, all.y = TRUE)
   colnames(res) <- c("pos", "Pos", "Neg")
@@ -740,30 +744,30 @@ CoverageSummaryPlot <- function(GenSummary_Plot,  siRNA_Summary, piRNA_Summary){
   namMidLeft <- names(siRNA_Summary[1])
   namMidLeft <- str_extract(namMidLeft, '(?<=_)[A-Z0-9]*')
   datMidLeft <- siRNA_Summary[[1]]
-  name <- refNames[namMidLeft]
-  gendata <- KnownCoding[[name]]
-  gendatMidLeft <- KnownCoding[[name]]
+  #name <- refNames[namMidLeft]
+  #gendata <- KnownCoding[[namMidLeft]]
+  gendatMidLeft <- KnownCoding[[namMidLeft]]
   
   namMidRight <- names(siRNA_Summary[2])
   namMidRight <- str_extract(namMidRight, '(?<=_)[A-Z0-9]*')
   datMidRight <- siRNA_Summary[[2]]
-  name <- refNames[namMidRight]
-  gendata <- KnownCoding[[name]]
-  gendatMidRight <- KnownCoding[[name]]
+  #name <- refNames[namMidRight]
+  #gendata <- KnownCoding[[namMidRight]]
+  gendatMidRight <- KnownCoding[[namMidRight]]
   
   namBotLeft <- names(piRNA_Summary[1])
   namBotLeft <- str_extract(namBotLeft, '(?<=_)[A-Z0-9]*')
   datBotLeft <- piRNA_Summary[[1]]
-  name <- refNames[namBotLeft]
-  gendata <- KnownCoding[[name]]
-  gendatBotLeft <- KnownCoding[[name]]
+  #name <- refNames[namBotLeft]
+  #gendata <- KnownCoding[[namBotLeft]]
+  gendatBotLeft <- KnownCoding[[namBotLeft]]
   
   namBotRight <- names(piRNA_Summary[2])
   namBotRight <- str_extract(namBotRight, '(?<=_)[A-Z0-9]*')
   datBotRight <- piRNA_Summary[[2]]
-  name <- refNames[namBotRight]
-  gendata <- KnownCoding[[name]]
-  gendatBotRight <- KnownCoding[[name]]
+  #name <- refNames[namBotRight]
+  #gendata <- KnownCoding[[namBotRight]]
+  gendatBotRight <- KnownCoding[[namBotRight]]
   
   TopLeft <- ggplot(data = datTopLeft)+
     geom_col( aes(x = x, y = Pos_Mean), fill = group.colours["Pos"], linewidth=0.5, colour="black", alpha=0.9)+
@@ -773,9 +777,10 @@ CoverageSummaryPlot <- function(GenSummary_Plot,  siRNA_Summary, piRNA_Summary){
     xlab ("Size")+
     ylab ("Count")+
     ylim (-(max(GenMaxCount)*1.1),(max(GenMaxCount)*1.1))+
-    ggtitle(namTopLeft)+
+    #ggtitle(namTopLeft)+
     piMaker_theme+
-    theme(legend.position = "none")
+    theme(legend.position = "none")+
+    theme(aspect.ratio=1)
   
   TopRight <- ggplot(data = datTopLeft)+
     geom_col( aes(x = x, y = Pos_Mean), fill = group.colours["Pos"], linewidth=0.5, colour="black", alpha=0.9)+
@@ -785,9 +790,10 @@ CoverageSummaryPlot <- function(GenSummary_Plot,  siRNA_Summary, piRNA_Summary){
     xlab ("Size")+
     ylab ("Count")+
     ylim (-(max(GenMaxCount)*1.1),(max(GenMaxCount)*1.1))+
-    ggtitle(namTopRight)+
+    #ggtitle(namTopRight)+
     piMaker_theme+
-    theme(legend.position = "none")
+    theme(legend.position = "none")+
+    theme(aspect.ratio=1)
   
   MidLeft <-  ggplot(data = datMidLeft)+
     geom_ribbon(aes(x = x, ymin = Pos_E_min, ymax = Pos_E_max), colour = group.colours["Pos"],
@@ -805,12 +811,13 @@ CoverageSummaryPlot <- function(GenSummary_Plot,  siRNA_Summary, piRNA_Summary){
               y = ((0.0005*gendatMidLeft$number)+0.005),
               nudge_x = 1, nudge_y = 1,
               check_overlap = F)+
-    ggtitle(paste0(namMidLeft, "_siRNA_Coverage"))+
+    #ggtitle(paste0(namMidLeft, "_siRNA_Coverage"))+
     ylim(-max(NormScale), max(NormScale))+
     xlab ("nt position")+
     guides(guide_legend, fill = NULL)+
     piMaker_theme+
-    theme(legend.position = "none")
+    theme(legend.position = "none")+
+    theme(aspect.ratio=1)
   
   MidRight <- ggplot(data = datMidRight)+
     geom_ribbon(aes(x = x, ymin = Pos_E_min, ymax = Pos_E_max), colour = group.colours["Pos"],
@@ -828,12 +835,13 @@ CoverageSummaryPlot <- function(GenSummary_Plot,  siRNA_Summary, piRNA_Summary){
               y = ((0.0005*gendatMidRight$number)+0.005),
               nudge_x = 1, nudge_y = 1,
               check_overlap = F)+
-    ggtitle(paste0(namMidRight, "_siRNA_Coverage"))+
+    #ggtitle(paste0(namMidRight, "_siRNA_Coverage"))+
     ylim(-max(NormScale), max(NormScale))+
     xlab ("nt position")+
     guides(guide_legend, fill = NULL)+
     piMaker_theme+
-    theme(legend.position = "none")
+    theme(legend.position = "none")+
+    theme(aspect.ratio=1)
   
   BotLeft <- ggplot(data = datBotLeft)+
     geom_ribbon(aes(x = x, ymin = Pos_E_min, ymax = Pos_E_max), colour = group.colours["Pos"],
@@ -851,12 +859,13 @@ CoverageSummaryPlot <- function(GenSummary_Plot,  siRNA_Summary, piRNA_Summary){
               y = ((0.0005*gendatBotLeft$number)+0.005),
               nudge_x = 1, nudge_y = 1,
               check_overlap = F)+
-    ggtitle(paste0(namBotLeft, "_piRNA_Coverage"))+
+    #ggtitle(paste0(namBotLeft, "_piRNA_Coverage"))+
     ylim(-max(NormScale), max(NormScale))+
     xlab ("nt position")+
     guides(guide_legend, fill = NULL)+
     piMaker_theme+
-    theme(legend.position = "none")
+    theme(legend.position = "none")+
+    theme(aspect.ratio=1)
   
   BotRight <- ggplot(data = datBotRight)+
     geom_ribbon(aes(x = x, ymin = Pos_E_min, ymax = Pos_E_max), colour = group.colours["Pos"],
@@ -874,12 +883,13 @@ CoverageSummaryPlot <- function(GenSummary_Plot,  siRNA_Summary, piRNA_Summary){
               y = ((0.0005*gendatBotRight$number)+0.005),
               nudge_x = 1, nudge_y = 1,
               check_overlap = F)+
-    ggtitle(paste0(namBotRight, "_piRNA_Coverage"))+
+    #ggtitle(paste0(namBotRight, "_piRNA_Coverage"))+
     ylim(-max(NormScale), max(NormScale))+
     xlab ("nt position")+
     guides(guide_legend, fill = NULL)+
     piMaker_theme+
-    theme(legend.position = "none")
+    theme(legend.position = "none")+
+    theme(aspect.ratio=1)
   
   
   CoverageSummary <- ggarrange(TopLeft ,
@@ -888,9 +898,9 @@ CoverageSummaryPlot <- function(GenSummary_Plot,  siRNA_Summary, piRNA_Summary){
                                MidRight +rremove("xlab") +rremove("x.text") +rremove("ylab") +rremove("y.text"),
                                BotLeft,
                                BotRight +rremove("ylab") +rremove("y.text"),
-                               nrow = 3, ncol = 2, widths = 1, heights = 1, align = "hv" )
+                               nrow = 3, ncol = 2, widths = 2, heights = 2, align = "hv" )
   plot(CoverageSummary)
-  saveImage(paste(filename))
+  saveImage(paste(filename), width = 16, height = 23)
   
 }
 
@@ -949,6 +959,7 @@ piMapper <- function(x, Scale){
   
 }
 
+round_any = function(x, accuracy, f=round){f(x/ accuracy) * accuracy}
 
 MatrixPlotSD <- function(Line, Bar, ProbMax, WeightedProbMax, BarMax){
   
